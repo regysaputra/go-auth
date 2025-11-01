@@ -1,0 +1,7 @@
+Welcome!
+
+Thanks for signing up! To verify your email address and activate your account, please copy and paste the following link into your web browser:
+
+{{.VerificationLink}}
+
+If you did not sign up for this account, you can safely ignore this email.

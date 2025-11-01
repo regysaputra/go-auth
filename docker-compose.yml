@@ -1,0 +1,47 @@
+services:
+  app:
+    build: .  # Tell docker to build from the Dockerfile in the current directory
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: always
+
+  db:
+    image: postgres:18-alpine
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: 123
+      POSTGRES_USER: regy
+      POSTGRES_DB: auth
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  migrate:
+    image: migrate/migrate
+    container_name: migrate
+    volumes:
+      - ./db/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://regy:123@db:5432/auth?sslmode=disable", "up"]
+    depends_on:
+      - db
+
+volumes:
+  pg-data:
+  redis-data:

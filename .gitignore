@@ -1,0 +1,4 @@
+.env
+tmp
+oci-private.key
+oci-public.key.pub

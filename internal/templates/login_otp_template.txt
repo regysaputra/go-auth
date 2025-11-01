@@ -1,0 +1,3 @@
+Your login code is: {{.Code}}
+
+This code will expire in 10 minutes. If you did not request this code, you can safely ignore this email.

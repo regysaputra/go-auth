@@ -1,0 +1,577 @@
+basePath: /
+definitions:
+  domain.User:
+    description: User information with id, name, email, and password
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      password:
+        type: string
+      verified:
+        type: boolean
+    type: object
+  handler.ErrorResponse:
+    properties:
+      message:
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  handler.FailResponse:
+    properties:
+      data: {}
+      status:
+        example: fail
+        type: string
+    type: object
+  handler.LoginUserFailResponse:
+    properties:
+      email:
+        example:
+        - email is required
+        - email is invalid
+        items:
+          type: string
+        type: array
+      password:
+        example:
+        - password is required
+        - password too short
+        items:
+          type: string
+        type: array
+    type: object
+  handler.LoginUserRequest:
+    properties:
+      email:
+        example: username@domain
+        type: string
+      password:
+        example: password
+        type: string
+      remember_me:
+        example: true
+        type: boolean
+    type: object
+  handler.LoginUserSuccessResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIs
+        type: string
+      remember_token:
+        example: InR5cCI6IkpXVCJ9eyJhbGciOiJIUzI1NiIs
+        type: string
+    type: object
+  handler.PasswordResetFailResponse:
+    properties:
+      email:
+        example:
+        - email is required
+        - email is invalid
+        items:
+          type: string
+        type: array
+    type: object
+  handler.PasswordResetRequest:
+    properties:
+      email:
+        example: username@domain
+        type: string
+    type: object
+  handler.PasswordResetSuccessResponse:
+    properties:
+      message:
+        example: Password reset link has been sent to your email
+        type: string
+    type: object
+  handler.RefreshTokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIs
+        type: string
+      remember_token:
+        example: InR5cCI6IkpXVCJ9eyJhbGciOiJIUzI1NiIs
+        type: string
+    type: object
+  handler.RegisterUserFailResponse:
+    properties:
+      email:
+        example:
+        - email is required
+        - email is invalid
+        items:
+          type: string
+        type: array
+      name:
+        example:
+        - name is required
+        - ""
+        items:
+          type: string
+        type: array
+      password:
+        example:
+        - password is required
+        - password too short
+        items:
+          type: string
+        type: array
+    type: object
+  handler.RegisterUserRequest:
+    properties:
+      email:
+        example: username@domain
+        type: string
+      name:
+        example: Egi
+        type: string
+      password:
+        example: '@fg8s64gf!'
+        type: string
+    type: object
+  handler.RegisterUserSuccessResponse:
+    properties:
+      access_token:
+        type: string
+      remember_token:
+        type: string
+    type: object
+  handler.RequestCodeFailResponse:
+    properties:
+      message:
+        example:
+        - email is required
+        - email is invalid
+        items:
+          type: string
+        type: array
+    type: object
+  handler.RequestCodeRequest:
+    properties:
+      email:
+        example: username@domain
+        type: string
+    type: object
+  handler.RequestCodeSuccessResponse:
+    properties:
+      message:
+        example: A verification code has been to your email
+        type: string
+    type: object
+  handler.ResetPasswordFailResponse:
+    properties:
+      password:
+        example:
+        - password is required
+        - password too short
+        items:
+          type: string
+        type: array
+    type: object
+  handler.ResetPasswordRequest:
+    properties:
+      password:
+        example: $fesf&idsie94
+        type: string
+    type: object
+  handler.ResetPasswordSuccessResponse:
+    properties:
+      message:
+        example: Password has been reset successfully
+        type: string
+    type: object
+  handler.SuccessResponse:
+    properties:
+      data: {}
+      status:
+        example: success
+        type: string
+    type: object
+  handler.VerifyCodeFailResponse:
+    properties:
+      code:
+        example:
+        - code is required
+        items:
+          type: string
+        type: array
+    type: object
+  handler.VerifyCodeRequest:
+    properties:
+      code:
+        example: "123456"
+        type: string
+    type: object
+  handler.VerifyCodeSuccessResponse:
+    properties:
+      email:
+        example: username@domain
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: egiwebdev@gmail.com
+    name: API Support
+    url: http://www.egiwebdev.id/support
+  description: This is server for authentication system API
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Authentication API
+  version: "1.0"
+paths:
+  /api/v1/auth:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user by email and password and returns a JWT token.
+      parameters:
+      - description: User Login Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.LoginUserSuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.FailResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.LoginUserFailResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Logs in a user
+      tags:
+      - auth
+  /api/v1/auth/password/request-reset:
+    post:
+      description: Send a password reset link to the user email address
+      parameters:
+      - description: User email
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/handler.PasswordResetRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.PasswordResetSuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.FailResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.PasswordResetFailResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Request a password reset
+      tags:
+      - auth
+  /api/v1/auth/password/reset:
+    post:
+      description: Set a new password for the user using a valid reset token
+      parameters:
+      - description: User password
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.ResetPasswordSuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.FailResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.ResetPasswordFailResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Reset user password
+      tags:
+      - auth
+  /api/v1/auth/refresh:
+    post:
+      description: Uses a remember token to generate a new JWT and a new remember
+        token. The token can be provided via a cookie (for web) or an X-Remember-Token
+        header (for non-web client)
+      parameters:
+      - description: Remember Me Token for non-web clients
+        in: header
+        name: X-Remember-Token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.RefreshTokenResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Refreshes a user's session
+      tags:
+      - auth
+  /api/v1/auth/request-code:
+    post:
+      description: Send a 6-digit verification code to email
+      parameters:
+      - description: Email to verify
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RequestCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.RequestCodeSuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.FailResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.RequestCodeFailResponse'
+              type: object
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Request a verification code
+      tags:
+      - auth
+  /api/v1/auth/verify:
+    get:
+      description: Uses a verification token from a query parameter to verify a user's
+        email and log them in
+      parameters:
+      - description: Email verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.LoginUserSuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Verifies a user's email
+      tags:
+      - auth
+  /api/v1/auth/verify-code:
+    post:
+      description: Verify code from email
+      parameters:
+      - description: Code to verify
+        in: body
+        name: code
+        required: true
+        schema:
+          $ref: '#/definitions/handler.VerifyCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.VerifyCodeSuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.FailResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.VerifyCodeFailResponse'
+              type: object
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Verify code
+      tags:
+      - auth
+  /api/v1/users:
+    post:
+      consumes:
+      - application/json
+      description: Add new user
+      parameters:
+      - description: User registration details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.RegisterUserSuccessResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.FailResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.RegisterUserFailResponse'
+              type: object
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      summary: Register new user
+      tags:
+      - user
+  /api/v1/users/me:
+    get:
+      description: Get detail user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/handler.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/domain.User'
+              type: object
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get user profile
+      tags:
+      - user
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

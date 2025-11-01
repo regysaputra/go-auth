@@ -1,0 +1,8 @@
+.git
+.env
+*.exe
+*.bin
+*.md
+docker-compose.yml
+*.key
+*.key.pub
