@@ -38,9 +38,9 @@ func NewRegisterUserWithCodeUseCase(
 	}
 }
 
-func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verification_token string, name string, password string) (*LoginToken, error) {
+func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verificationToken string, name string, password string) (*LoginToken, error) {
 	// Decode & verify JWT signature
-	token, err := jwt.ParseWithClaims(verification_token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(verificationToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -64,7 +64,7 @@ func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verification
 	}
 
 	// Check purpose
-	if claims.Purpose != "verification_token" {
+	if claims.Purpose != "verificationToken" {
 		return nil, ErrInvalidToken
 	}
 
@@ -87,7 +87,7 @@ func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verification
 		return nil, ErrPasswordTooShort
 	}
 
-	// Check if user already exist
+	// Check if a user already exists
 	_, err = uc.userRepository.IsVerifiedUserExists(ctx, email)
 
 	if err != nil {

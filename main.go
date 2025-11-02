@@ -96,7 +96,12 @@ func main() {
 	}
 
 	asynqClient := asynq.NewClient(redisConnOpt)
-	defer asynqClient.Close()
+	defer func(asynqClient *asynq.Client) {
+		err := asynqClient.Close()
+		if err != nil {
+			logger.Error("Could not close asynq client", "error", err)
+		}
+	}(asynqClient)
 
 	taskDistributor := worker.NewRedisTaskDistributor(asynqClient)
 
@@ -178,7 +183,10 @@ func main() {
 	}))
 
 	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Backend server is healthy"))
+		_, err := w.Write([]byte("Backend server is healthy"))
+		if err != nil {
+			logger.Error("Backend server is error:", "error", err)
+		}
 	})
 
 	// API v1 routes
