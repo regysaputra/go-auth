@@ -35,6 +35,9 @@ jobs:
       - name: Download Go Modules
         run: go mod download
 
+      - name: Run Go Tests
+        run: go test ./...
+
       # ----- CI (Continuous Integration) -----
       - name: Run Go Lint
         uses: golangci/golangci-lint-action@v4
