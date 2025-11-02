@@ -1,0 +1,99 @@
+name: CI/CD Pipeline
+
+# Trigger the workflow on every to main branch
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+jobs:
+  build-and-push:
+    # Run the job on a fresh Ubuntu server provided by GitHub
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+
+
+    # Grant permissions for the job to write to the GitHub Container Registry
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # ----- SETUP -----
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      # ----- CI (Continuous Integration) -----
+      - name: Run Go Lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.59
+
+      - name: Run Go Tests
+        run: go test ./...
+
+      # ----- BUILD & PUSH -----
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.TOKEN_GITHUB }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha_small }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}     # e.g., '123.45.67.89'
+          username: ${{ secrets.SERVER_USER }} # e.g., 'ubuntu'
+          key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
+          script: |
+            # Go to your app's directory on the server
+            cd go-auth
+  
+            # Update environment variables (if they're not in the compose file)
+            # Make sure your .env file on the server has the correct production URLs
+            export DATABASE_URL=${{ secrets.DATABASE_URL }}
+            export REDIS_URL=${{ secrets.REDIS_URL }}
+            export SMTP_HOST=${{ secrets.SMTP_HOST }}
+            export SMTP_PORT=${{ secrets.SMTP_PORT }}
+            export SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+            export SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            export SMTP_FROM=${{ secrets.SMTP_FROM }}
+            export BASE_URL=${{ secrets.BASE_URL }}
+            export SECRET_KEY=${{ secrets.SECRET_KEY }}
+  
+            # Pull the new image from GHCR
+            # We must log in to the private GHCR registry first
+            echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker pull ${{ env.IMAGE_NAME }}:latest
+  
+            # Update the image field in your docker-compose.yml on the server
+            # This is a robust way to ensure it uses the new image
+            sed -i 's|image: .*|image: ${{ env.IMAGE_NAME }}:latest|' docker-compose.yml
+  
+            # Restart the api service
+            docker compose up -d api
+  
+            # (Optional) Run database migrations
+            docker compose run migrate

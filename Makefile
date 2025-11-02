@@ -4,7 +4,7 @@ include .env
 export
 
 # The .PHONY directive tells make that these are not actual files to be built.
-.PHONY: run build test clean swag migrate-create migrate-up migrate-down migrate-fix migrate-reset docker-redis
+.PHONY: run build test clean swag migrate-create migrate-up migrate-down migrate-fix migrate-reset docker-redis ssh
 
 # Runs the main application
 run:
@@ -57,3 +57,6 @@ migrate-reset:
 docker-redis:
 	@echo "Running redis..."
 	@docker run --name auth-redis -p 6379:6379 -d redis
+
+ssh:
+	@ssh -i oci-private.key ubuntu@161.118.206.173
