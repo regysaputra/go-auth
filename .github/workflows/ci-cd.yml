@@ -35,6 +35,9 @@ jobs:
       - name: Download Go Modules
         run: go mod download
 
+      - name: Vendor dependencies
+        run: go mod vendor
+
       - name: Run Go Tests
         run: go test ./...
 
