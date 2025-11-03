@@ -45,8 +45,7 @@ jobs:
       - name: Run Go Lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.54.2
-
+          version: v2.1.5
       #      - name: Run Go Tests
 #        run: go test ./...
 
