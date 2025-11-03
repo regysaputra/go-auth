@@ -25,12 +25,12 @@ jobs:
     steps:
       # ----- SETUP -----
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: stable
 
       - name: Download Go Modules
         run: go mod download
@@ -43,9 +43,9 @@ jobs:
 
       # ----- CI (Continuous Integration) -----
       - name: Run Go Lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.54
+          version: v2.1
 
       #      - name: Run Go Tests
 #        run: go test ./...
