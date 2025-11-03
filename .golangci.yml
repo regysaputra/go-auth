@@ -20,7 +20,6 @@ linters:
   # Start with all linters disabled and explicitly enable only the desired ones.
   # This "allow-list" approach prevents new, potentially noisy linters from being
   # enabled automatically upon a tool upgrade.
-  disable-all: true
   enable:
     # Core Go tool for finding suspicious constructs.
     - govet
@@ -44,21 +43,6 @@ linters:
     - rowserrcheck
 
 # Fine-grained settings for individual linters.
-linters-settings:
-  gocyclo:
-    # Set a reasonable complexity limit. Adjust based on team standards.
-    min-complexity: 15
-  misspell:
-    # Specify the locale for dictionary checks.
-    locale: US
-  unused:
-    # Check for unused function parameters. Can be noisy; disable if needed.
-    check-exported: false
-  gosec:
-    # Exclude specific vulnerability checks if they are not applicable.
-    # G101: Look for hardcoded credentials
-    excludes:
-      - G101
 
 # Configuration for formatters (code styling tools).
 formatters:
@@ -67,15 +51,6 @@ formatters:
     - goimports
 
 # Fine-grained settings for individual formatters.
-formatters-settings:
-  gofmt:
-    # Apply rewrite rules to modernize Go code automatically.
-    rewrite-rules:
-      - pattern: 'interface{}'
-        replacement: 'any'
-  goimports:
-    # Group internal project imports separately from third-party ones.
-    local-prefixes: github.com/my-org/my-project
 
 # Configuration for how issues are reported and filtered.
 issues:
@@ -84,13 +59,3 @@ issues:
   max-same-issues: 0
 
   # Define rules to exclude specific files or directories from certain linters.
-  exclude-rules:
-    # Allow longer functions in test files.
-    - path: _test\.go
-      linters:
-        - funlen
-    
-    # Exclude all linters from running on auto-generated protobuf files.
-    - path: ".*\\.pb\\.go"
-      linters:
-        - "all"
