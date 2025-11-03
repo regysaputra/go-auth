@@ -2,12 +2,14 @@ package usecase
 
 import "context"
 
+// VerifyLoginOTPUseCase
 type VerifyLoginOTPUseCase struct {
 	loginOTPRepository LoginOTPRepository
 	userRepository     UserRepository
 	loginUseCase       *LoginUserUseCase
 }
 
+// NewVerifyLoginOTPUseCase
 func NewVerifyLoginOTPUseCase(
 	loginOTPRepository LoginOTPRepository,
 	userRepository UserRepository,
@@ -20,6 +22,7 @@ func NewVerifyLoginOTPUseCase(
 	}
 }
 
+// Execute verify login otp
 func (uc *VerifyLoginOTPUseCase) Execute(ctx context.Context, code string) (*LoginToken, error) {
 	// Validate code
 	hashCode := uc.loginOTPRepository.Hash(code)

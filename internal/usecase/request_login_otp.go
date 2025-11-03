@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// RequestLoginOTPUseCase represents the request login OTP use case object
 type RequestLoginOTPUseCase struct {
 	logger             *slog.Logger
 	loginOTPRepository LoginOTPRepository
@@ -15,6 +16,7 @@ type RequestLoginOTPUseCase struct {
 	taskDistributor    TaskDistributor
 }
 
+// NewRequestLoginOTPUseCase creates a new request login OTP use case object
 func NewRequestLoginOTPUseCase(
 	logger *slog.Logger,
 	loginOTPRepository LoginOTPRepository,
@@ -29,6 +31,7 @@ func NewRequestLoginOTPUseCase(
 	}
 }
 
+// Execute executes the request login OTP use case
 func (uc *RequestLoginOTPUseCase) Execute(ctx context.Context, email string) error {
 	// Validate input
 	email = strings.TrimSpace(email)

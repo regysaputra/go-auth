@@ -9,6 +9,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
+// TaskProcessor is the interface for processing tasks
 type TaskProcessor interface {
 	Start() error
 	Shutdown()
@@ -21,6 +22,7 @@ type RedisTaskProcessor struct {
 	logger      *slog.Logger
 }
 
+// NewRedisTaskProcessor creates a new RedisTaskProcessor object
 func NewRedisTaskProcessor(server *asynq.Server, emailSender usecase.EmailSender, logger *slog.Logger) *RedisTaskProcessor {
 	return &RedisTaskProcessor{
 		server:      server,
@@ -41,6 +43,7 @@ func (p *RedisTaskProcessor) Start() error {
 	return p.server.Start(mux)
 }
 
+// Shutdown stops the Asynq server
 func (p *RedisTaskProcessor) Shutdown() {
 	p.logger.Info("Shutting down task processor")
 	p.server.Shutdown()

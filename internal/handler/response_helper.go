@@ -6,16 +6,19 @@ import (
 	"net/http"
 )
 
+// SuccessResponse represents the success response
 type SuccessResponse struct {
 	Status string      `json:"status" example:"success"`
 	Data   interface{} `json:"data"`
 }
 
+// FailResponse represents the fail response
 type FailResponse struct {
 	Status string      `json:"status" example:"fail"`
 	Data   interface{} `json:"data"`
 }
 
+// ErrorResponse represents the error response
 type ErrorResponse struct {
 	Status  string `json:"status" example:"error"`
 	Message string `json:"message"`

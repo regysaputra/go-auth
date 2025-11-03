@@ -7,12 +7,14 @@ import (
 	"time"
 )
 
+// RequestVerificationCodeUseCase represents the request verification code use case object
 type RequestVerificationCodeUseCase struct {
 	userRepository                  UserRepository
 	emailVerificationCodeRepository EmailVerificationCodeRepository
 	taskDistributor                 TaskDistributor
 }
 
+// NewRequestVerificationCodeUseCase creates a new request verification code use case object
 func NewRequestVerificationCodeUseCase(
 	emailVerificationCodeRepository EmailVerificationCodeRepository,
 	userRepository UserRepository,
@@ -25,6 +27,7 @@ func NewRequestVerificationCodeUseCase(
 	}
 }
 
+// Execute executes the request verification code use case
 func (uc *RequestVerificationCodeUseCase) Execute(ctx context.Context, email string) error {
 	// Email validation
 	email = strings.TrimSpace(email)

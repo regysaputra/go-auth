@@ -3,16 +3,20 @@ package usecase
 import (
 	"auth/internal/domain"
 	"context"
+	"database/sql"
+	"errors"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
+// RegisterUserUseCase represents the register user use case
 type RegisterUserUseCase struct {
 	userRepository                   UserRepository
 	sendEmailVerificationLinkUseCase *SendEmailVerificationLinkUseCase
 }
 
+// NewRegisterUserUseCase creates a new register user use case
 func NewRegisterUserUseCase(
 	userRepository UserRepository,
 	sendEmailVerificationLinkUC *SendEmailVerificationLinkUseCase,
@@ -23,6 +27,7 @@ func NewRegisterUserUseCase(
 	}
 }
 
+// Execute executes the register user use case
 func (uc *RegisterUserUseCase) Execute(ctx context.Context, name, email, password string) (*domain.User, error) {
 	// Add validation for empty fields
 	if strings.TrimSpace(name) == "" {
@@ -50,7 +55,7 @@ func (uc *RegisterUserUseCase) Execute(ctx context.Context, name, email, passwor
 	// Check if user already exist
 	_, err := uc.userRepository.FindByEmail(ctx, email)
 	if err != nil {
-		if err.Error() != "no rows in result set" {
+		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
 	}

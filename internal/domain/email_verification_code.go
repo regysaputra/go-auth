@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// EmailVerificationCode to hold data of email verification code
 type EmailVerificationCode struct {
 	ID        int64
 	Email     string
@@ -13,6 +14,7 @@ type EmailVerificationCode struct {
 	ExpiresAt time.Time
 }
 
+// Validate email verification code
 func (obj *EmailVerificationCode) Validate() error {
 	if !strings.Contains(obj.Email, "@") {
 		return errors.New("invalid email format")

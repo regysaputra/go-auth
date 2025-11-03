@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// EmailVerificationCodeRepository represents the email verification code repository interface
 type EmailVerificationCodeRepository interface {
 	GenerateCode(length int) (string, error)
 	Save(ctx context.Context, email string, codeHash string, duration time.Duration) error

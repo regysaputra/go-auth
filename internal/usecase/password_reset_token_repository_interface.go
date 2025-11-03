@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// PasswordResetTokenRepository represents the password reset token repository interface
 type PasswordResetTokenRepository interface {
 	Generate() (string, error)
 	Hash(token string) string

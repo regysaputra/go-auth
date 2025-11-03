@@ -2,6 +2,7 @@ package domain
 
 import "time"
 
+// RememberToken represents a remember token.
 type RememberToken struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`

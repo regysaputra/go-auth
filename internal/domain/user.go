@@ -16,6 +16,7 @@ type User struct {
 	Verified bool   `json:"verified"`
 }
 
+// Validate user
 func (u *User) Validate() error {
 	if !strings.Contains(u.Email, "@") {
 		return errors.New("invalid email format")

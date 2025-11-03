@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-// BackgroundWorker manages running background task gracefully
+// BackgroundWorker is a simple wrapper around a WaitGroup
 type BackgroundWorker struct {
 	wg     sync.WaitGroup
 	logger *slog.Logger

@@ -1,3 +1,4 @@
+// Package main is the entry point of the application.
 package main
 
 import (
@@ -182,7 +183,7 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+	router.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Backend server is healthy"))
 		if err != nil {
 			logger.Error("Backend server is error:", "error", err)
@@ -220,8 +221,12 @@ func main() {
 
 	// Set up the server
 	server := &http.Server{
-		Addr:    ":" + os.Getenv("PORT"),
-		Handler: router,
+		Addr:              ":" + os.Getenv("PORT"),
+		Handler:           router,
+		ReadTimeout:       5 * time.Second,   // Max time to read the entire request, including body
+		WriteTimeout:      10 * time.Second,  // Max time to write the response
+		IdleTimeout:       120 * time.Second, // Max time for a keep-alive connection to be idle
+		ReadHeaderTimeout: 3 * time.Second,   // Max time to read request headers
 	}
 
 	go func() {

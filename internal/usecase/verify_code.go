@@ -2,13 +2,17 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 )
 
+// VerifyCodeUseCase represents the use case for verifying the code
 type VerifyCodeUseCase struct {
 	emailVerificationCodeRepository EmailVerificationCodeRepository
 	tokenGenerator                  TokenGenerator
 }
 
+// NewVerifyCodeUseCase creates a new VerifyCodeUseCase object
 func NewVerifyCodeUseCase(
 	emailVerificationCodeRepository EmailVerificationCodeRepository,
 	tokenGenerator TokenGenerator,
@@ -19,12 +23,13 @@ func NewVerifyCodeUseCase(
 	}
 }
 
+// Execute executes the use case
 func (uc *VerifyCodeUseCase) Execute(ctx context.Context, code string) (string, error) {
 	// Hash the code
 	hashCode := uc.emailVerificationCodeRepository.Hash(code)
 	verification, err := uc.emailVerificationCodeRepository.FindByCode(ctx, hashCode)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrInvalidVerificationCode
 		}
 

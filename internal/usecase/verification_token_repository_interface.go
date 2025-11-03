@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// VerificationTokenRepository represents the verification token repository interface
 type VerificationTokenRepository interface {
 	Generate() (string, error)
 	Hash(token string) string

@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// RememberTokenRepository represents the remember token repository interface.
 type RememberTokenRepository interface {
 	// Generate creates a new secure token string.
 	Generate() (string, error)

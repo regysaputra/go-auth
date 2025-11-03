@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// AuthHandler represents the auth handler object
 type AuthHandler struct {
 	logger                         *slog.Logger
 	loginUserUseCase               *usecase.LoginUserUseCase
@@ -23,6 +24,7 @@ type AuthHandler struct {
 	verifyLoginOTPUseCase          *usecase.VerifyLoginOTPUseCase
 }
 
+// NewAuthHandler creates a new auth handler object
 func NewAuthHandler(
 	logger *slog.Logger,
 	loginUC *usecase.LoginUserUseCase,
@@ -49,81 +51,104 @@ func NewAuthHandler(
 	}
 }
 
+// LoginUserRequest represent the request body for login user
 type LoginUserRequest struct {
 	Email      string `json:"email" example:"username@domain"`
 	Password   string `json:"password" example:"password"`
 	RememberMe bool   `json:"remember_me" example:"true"`
 }
 
+// LoginUserSuccessResponse represent the response body for login user success
 type LoginUserSuccessResponse struct {
 	AccessToken   string `json:"access_token" example:"eyJhbGciOiJIUzI1NiIs"`
 	RememberToken string `json:"remember_token" example:"InR5cCI6IkpXVCJ9eyJhbGciOiJIUzI1NiIs"`
 }
 
+// LoginUserFailResponse represent the response body for login user fail
 type LoginUserFailResponse struct {
 	Email    []string `json:"email" example:"email is required,email is invalid"`
 	Password []string `json:"password" example:"password is required,password too short"`
 }
 
+// RefreshTokenResponse represent the response body for refresh token
 type RefreshTokenResponse struct {
 	AccessToken   string `json:"access_token" example:"eyJhbGciOiJIUzI1NiIs"`
 	RememberToken string `json:"remember_token" example:"InR5cCI6IkpXVCJ9eyJhbGciOiJIUzI1NiIs"`
 }
 
+// PasswordResetRequest represent the request body for password reset
 type PasswordResetRequest struct {
 	Email string `json:"email" example:"username@domain"`
 }
 
+// PasswordResetSuccessResponse represent the response body for password reset success
 type PasswordResetSuccessResponse struct {
 	Message string `json:"message" example:"Password reset link has been sent to your email"`
 }
 
+// PasswordResetFailResponse represent the response body for password reset fail
 type PasswordResetFailResponse struct {
 	Email []string `json:"email" example:"email is required,email is invalid"`
 }
 
+// ResetPasswordRequest represent the request body for reset password
 type ResetPasswordRequest struct {
 	Password string `json:"password" example:"$fesf&idsie94"`
 }
 
+// ResetPasswordSuccessResponse represent the response body for reset password success
 type ResetPasswordSuccessResponse struct {
 	Message string `json:"message" example:"Password has been reset successfully"`
 }
 
+// ResetPasswordFailResponse represent the response body for reset password fail
 type ResetPasswordFailResponse struct {
 	Password []string `json:"password" example:"password is required,password too short"`
 }
 
+// RequestCodeRequest represent the request body for request code
 type RequestCodeRequest struct {
 	Email string `json:"email" example:"username@domain"`
 }
 
+// RequestCodeSuccessResponse represent the response body for request code success
 type RequestCodeSuccessResponse struct {
 	Message string `json:"message" example:"A verification code has been to your email"`
 }
 
+// RequestCodeFailResponse represent the response body for request code fail
 type RequestCodeFailResponse struct {
 	Message []string `json:"message" example:"email is required,email is invalid"`
 }
 
+// VerifyCodeRequest represent the request body for verify code
 type VerifyCodeRequest struct {
 	Code string `json:"code" example:"123456"`
 }
 
+// VerifyCodeSuccessResponse represent the response body for verify code success
 type VerifyCodeSuccessResponse struct {
 	VerificationToken string `json:"verification_token" example:"eyHUhjgtIG"`
 }
 
+// VerifyCodeFailResponse represent the response body for verify code fail
 type VerifyCodeFailResponse struct {
 	Code []string `json:"code" example:"code is required"`
 }
 
+// RequestLoginOTPRequest represent the request body for request login otp
 type RequestLoginOTPRequest struct {
 	Email string `json:"email" example:"username@domain"`
 }
 
+// RequestLoginOTPSuccessResponse represent the response body for request login otp success
 type RequestLoginOTPSuccessResponse struct {
 	Message string `json:"message" example:"A verification code has been sent to your email"`
+}
+
+// RequestLoginOTPFailResponse represent the response body for request login otp fail
+type RequestLoginOTPFailResponse struct {
+	Message []string `json:"message" example:"email is required,email is invalid"`
 }
 
 // LoginUser godoc

@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 )
 
 // VerifyEmailUseCase Handle the logic for verifying a user email with a token
@@ -11,6 +13,7 @@ type VerifyEmailUseCase struct {
 	loginUseCase                *LoginUserUseCase
 }
 
+// NewVerifyEmailUseCase creates a new VerifyEmailUseCase object
 func NewVerifyEmailUseCase(userRepository UserRepository, verificationTokenRepository VerificationTokenRepository, loginUseCase *LoginUserUseCase) *VerifyEmailUseCase {
 	return &VerifyEmailUseCase{
 		userRepository:              userRepository,
@@ -28,7 +31,7 @@ func (uc *VerifyEmailUseCase) Execute(ctx context.Context, rawToken string) (*Lo
 	// Find the verification token
 	token, err := uc.verificationTokenRepository.FindByToken(ctx, rawToken)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrInvalidToken
 		}
 

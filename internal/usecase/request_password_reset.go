@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log/slog"
 	"time"
 )
@@ -33,7 +35,7 @@ func (uc *RequestPasswordResetUseCase) Execute(ctx context.Context, email string
 
 	// don't throw error if user doesn't exist or unverified to prevent email enumeration attack
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			uc.logger.Warn("Password reset requested for non-existent user", "email", email)
 			return nil
 		}

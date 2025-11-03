@@ -7,6 +7,7 @@ var (
 	ErrNotFound = errors.New("record not found")
 )
 
+// ErrDuplicateEmail is returned when a user with the same email already exists.
 type ErrDuplicateEmail struct{}
 
 func (err *ErrDuplicateEmail) Error() string {

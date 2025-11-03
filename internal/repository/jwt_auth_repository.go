@@ -7,10 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// JWTAuthRepository represents the JWT auth repository object
 type JWTAuthRepository struct {
 	secretKey string
 }
 
+// NewJWTAuthRepository creates a new JWT auth repository object
 func NewJWTAuthRepository() *JWTAuthRepository {
 	secret := os.Getenv("SECRET_KEY")
 	if secret == "" {
@@ -21,6 +23,7 @@ func NewJWTAuthRepository() *JWTAuthRepository {
 	return &JWTAuthRepository{secretKey: secret}
 }
 
+// GenerateToken generates a JWT token
 func (r *JWTAuthRepository) GenerateToken(subject any, purpose string) (string, error) {
 	// Create the token claims
 	claims := jwt.MapClaims{

@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// LoginOTPRepository interface
 type LoginOTPRepository interface {
 	Generate(length int) (string, error)
 	Hash(code string) string

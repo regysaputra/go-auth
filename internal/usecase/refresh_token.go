@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -18,6 +20,7 @@ type RefreshResult struct {
 	NewRememberToken string
 }
 
+// NewRefreshTokenUseCase creates a new RefreshTokenUseCase object
 func NewRefreshTokenUseCase(
 	userRepository UserRepository,
 	rememberTokenRepository RememberTokenRepository,
@@ -39,7 +42,7 @@ func (uc *RefreshTokenUseCase) Execute(ctx context.Context, rawRememberToken str
 	hashToken := uc.rememberTokenRepository.Hash(rawRememberToken)
 	oldToken, err := uc.rememberTokenRepository.FindByToken(ctx, hashToken)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrInvalidToken
 		}
 

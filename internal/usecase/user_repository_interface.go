@@ -5,6 +5,7 @@ import (
 	"context"
 )
 
+// UserRepository represents the user repository interface
 type UserRepository interface {
 	Save(ctx context.Context, user *domain.User) error
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)

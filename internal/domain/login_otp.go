@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// LoginOTP represents a login OTP
 type LoginOTP struct {
 	ID        int64
 	Email     string
@@ -13,6 +14,7 @@ type LoginOTP struct {
 	ExpiresAt time.Time
 }
 
+// Validate validates the LoginOTP
 func (obj *LoginOTP) Validate() error {
 	if !strings.Contains(obj.Email, "@") {
 		return errors.New("invalid email format")

@@ -1,5 +1,6 @@
 package usecase
 
+// EmailSender interface
 type EmailSender interface {
 	SendEmailVerificationLink(email string, token string) error
 	SendEmailPasswordResetLink(email string, token string) error

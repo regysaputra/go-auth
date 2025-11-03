@@ -4,6 +4,7 @@ import (
 	"context"
 )
 
+// TaskDistributor interface for task distributor
 type TaskDistributor interface {
 	DistributeTaskSendEmailVerificationLink(ctx context.Context, email string, token string) error
 	DistributeTaskSendEmailPasswordResetLink(ctx context.Context, email string, token string) error

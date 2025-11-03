@@ -11,16 +11,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// PostgresLoginOTPRepository represents the postgres login otp repository object
 type PostgresLoginOTPRepository struct {
 	db *pgxpool.Pool
 }
 
+// NewPostgresLoginOTPRepository creates a new postgres login otp repository object
 func NewPostgresLoginOTPRepository(db *pgxpool.Pool) *PostgresLoginOTPRepository {
 	return &PostgresLoginOTPRepository{
 		db: db,
 	}
 }
 
+// Generate generates a random string of length
 func (r *PostgresLoginOTPRepository) Generate(length int) (string, error) {
 	var numbers = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
 	b := make([]byte, length)
@@ -37,12 +40,14 @@ func (r *PostgresLoginOTPRepository) Generate(length int) (string, error) {
 	return string(b), nil
 }
 
+// Hash hashes the code
 func (r *PostgresLoginOTPRepository) Hash(code string) string {
 	hash := sha256.Sum256([]byte(code))
 
 	return fmt.Sprintf("%x", hash)
 }
 
+// Save saves the code
 func (r *PostgresLoginOTPRepository) Save(ctx context.Context, email string, codeHash string, duration time.Duration) error {
 	sql := "INSERT INTO login_otps (email, code_hash, expires_at) VALUES ($1, $2, $3)"
 	_, err := r.db.Exec(ctx, sql, email, codeHash, time.Now().Add(duration))
@@ -54,6 +59,7 @@ func (r *PostgresLoginOTPRepository) Save(ctx context.Context, email string, cod
 	return nil
 }
 
+// IsCodeExist checks if the code exists
 func (r *PostgresLoginOTPRepository) IsCodeExist(ctx context.Context, codeHash string) error {
 	sql := "SELECT EXISTS (SELECT 1 FROM login_otps WHERE code_hash = $1)"
 	var exist bool
@@ -65,6 +71,7 @@ func (r *PostgresLoginOTPRepository) IsCodeExist(ctx context.Context, codeHash s
 	return nil
 }
 
+// Delete deletes the code
 func (r *PostgresLoginOTPRepository) Delete(ctx context.Context, email string) error {
 	sql := "DELETE FROM login_otps WHERE email = $1"
 	_, err := r.db.Exec(ctx, sql, email)

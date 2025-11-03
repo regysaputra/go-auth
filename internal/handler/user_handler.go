@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+// UserHandler represents the user handler object
 type UserHandler struct {
 	logger                      *slog.Logger
 	registerUserUseCase         *usecase.RegisterUserUseCase
@@ -15,6 +16,7 @@ type UserHandler struct {
 	getUserProfileUseCase       *usecase.GetUserProfileUseCase
 }
 
+// NewUserHandler creates a new user handler object
 func NewUserHandler(
 	logger *slog.Logger,
 	registerUC *usecase.RegisterUserUseCase,
@@ -29,23 +31,27 @@ func NewUserHandler(
 	}
 }
 
+// RegisterUserRequest represent the request body for register user
 type RegisterUserRequest struct {
 	Name     string `json:"name" example:"Egi"`
 	Email    string `json:"email" example:"username@domain"`
 	Password string `json:"password" example:"@fg8s64gf!"`
 }
 
+// RegisterUserFailResponse represent the response body for register user fail
 type RegisterUserFailResponse struct {
 	Name     []string `json:"name" example:"name is required,"`
 	Email    []string `json:"email" example:"email is required,email is invalid"`
 	Password []string `json:"password" example:"password is required,password too short"`
 }
 
+// RegisterUserWithCodeSuccessResponse represent the response body for register user with code success
 type RegisterUserWithCodeSuccessResponse struct {
 	AccessToken   string `json:"access_token"`
 	RememberToken string `json:"remember_token,omitempty"`
 }
 
+// RegisterUserSuccessResponse represent the response body for register user success
 type RegisterUserSuccessResponse struct {
 	Message string `json:"message"`
 }

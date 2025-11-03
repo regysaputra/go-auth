@@ -3,6 +3,7 @@ package usecase
 import (
 	"auth/internal/domain"
 	"context"
+	"database/sql"
 	"errors"
 	"os"
 	"strings"
@@ -12,12 +13,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// RegisterUserWithCodeUseCase represents the RegisterUserWithCode use case object
 type RegisterUserWithCodeUseCase struct {
 	userRepository    UserRepository
 	verifyCodeUseCase *VerifyCodeUseCase
 	loginUseCase      *LoginUserUseCase
 }
 
+// Claims represents the JWT claims
 type Claims struct {
 	Subject string `json:"sub"`
 	Issuer  string `json:"iss"`
@@ -26,6 +29,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+// NewRegisterUserWithCodeUseCase creates a new RegisterUserWithCodeUseCase object
 func NewRegisterUserWithCodeUseCase(
 	userRepository UserRepository,
 	verifyCodeUseCase *VerifyCodeUseCase,
@@ -38,6 +42,7 @@ func NewRegisterUserWithCodeUseCase(
 	}
 }
 
+// Execute executes the RegisterUserWithCode use case
 func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verificationToken string, name string, password string) (*LoginToken, error) {
 	// Decode & verify JWT signature
 	token, err := jwt.ParseWithClaims(verificationToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
@@ -91,7 +96,7 @@ func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verification
 	_, err = uc.userRepository.IsVerifiedUserExists(ctx, email)
 
 	if err != nil {
-		if err.Error() != "no rows in result set" {
+		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
 	}

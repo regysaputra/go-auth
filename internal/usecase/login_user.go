@@ -2,17 +2,14 @@ package usecase
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
+	"errors"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-//type LoginToken struct {
-//	AccessToken   string
-//	RememberToken string
-//}
-
+// LoginUserUseCase represents the login user use case object
 type LoginUserUseCase struct {
 	userRepository     UserRepository
 	tokenGenerator     TokenGenerator
@@ -20,11 +17,13 @@ type LoginUserUseCase struct {
 	rememberMeHours    time.Duration
 }
 
+// LoginToken represents the login token object
 type LoginToken struct {
 	AccessToken   string
 	RememberToken string
 }
 
+// NewLoginUserUseCase creates a new login user use case object
 func NewLoginUserUseCase(userRepository UserRepository, tokenGenerator TokenGenerator, rememberRepository RememberTokenRepository) *LoginUserUseCase {
 	return &LoginUserUseCase{
 		userRepository:     userRepository,
@@ -40,7 +39,7 @@ func (uc *LoginUserUseCase) Execute(ctx context.Context, email string, password 
 	user, err := uc.userRepository.FindByEmail(ctx, email)
 	if err != nil {
 		// Don't return user not found error to prevent email enumeration attack
-		if err.Error() == "no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrInvalidCredentials
 		}
 
@@ -81,6 +80,5 @@ func (uc *LoginUserUseCase) GenerateToken(ctx context.Context, userID int64, rem
 		}
 		result.RememberToken = rawToken
 	}
-	fmt.Println("RESULT : ", result.RememberToken)
 	return result, nil
 }

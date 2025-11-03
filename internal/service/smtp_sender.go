@@ -30,6 +30,7 @@ type SmtpConfig struct {
 	BaseURL  string
 }
 
+// NewSmtpEmailSender creates a new SMTP email sender
 func NewSmtpEmailSender(config SmtpConfig) *SmtpEmailSender {
 	templates, err := template.ParseFS(internal.TemplateFS, "templates/*.html", "templates/*.txt")
 	if err != nil {
@@ -55,6 +56,7 @@ func (sender *SmtpEmailSender) SendEmailVerificationLink(email, token string) er
 	return sender.sendEmail(email, "Password Reset Link", "password_reset_link_template", data)
 }
 
+// SendEmailPasswordResetLink connects to the SMTP server and sends the email
 func (sender *SmtpEmailSender) SendEmailPasswordResetLink(email string, token string) error {
 	data := map[string]string{
 		"ResetLink": fmt.Sprintf("%s/api/v1/auth/password/reset?token=%s", sender.BaseURL, token),
@@ -63,6 +65,7 @@ func (sender *SmtpEmailSender) SendEmailPasswordResetLink(email string, token st
 	return sender.sendEmail(email, "Password Reset Link", "password_reset_link_template", data)
 }
 
+// SendEmailVerificationCode connects to the SMTP server and sends the email
 func (sender *SmtpEmailSender) SendEmailVerificationCode(email string, code string) error {
 	data := map[string]interface{}{
 		"Code": code,
@@ -71,6 +74,7 @@ func (sender *SmtpEmailSender) SendEmailVerificationCode(email string, code stri
 	return sender.sendEmail(email, "Your Verification Code", "verification_email_template", data)
 }
 
+// SendEmailLoginOTP connects to the SMTP server and sends the email
 func (sender *SmtpEmailSender) SendEmailLoginOTP(email string, code string) error {
 	data := map[string]string{
 		"LoginCode": code,
