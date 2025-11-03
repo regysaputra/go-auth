@@ -3,12 +3,18 @@ version: "2"
 run:
   timeout: 5m
 
-linters:
+formatters:
   enable:
     - gofmt
+    - goimports
+
+linters:
+  enable:
     - govet
     - staticcheck
     - gosec
+  disable:
+    - gofmt
 
 issues:
   max-issues-per-linter: 0
