@@ -1,16 +1,96 @@
+# Signifies the use of the modern, mandatory configuration schema.
 version: "2"
 
+# Controls the runtime behavior of golangci-lint.
 run:
+  # Set a global timeout for the entire analysis to prevent CI jobs from stalling.
   timeout: 5m
 
-linters:
-  enable:
-    - govet
-    - staticcheck
-    - gosec
-  disable:
-    - gofmt
+  # Ensure the linter exits with a non-zero code if issues are found.
+  issues-exit-code: 1
 
+  # Analyze test files in addition to application code.
+  tests: true
+
+  # Use the Go version from the project's go.mod file.
+  go: '1.22'
+
+# Configuration for linters (code analysis tools).
+linters:
+  # Start with all linters disabled and explicitly enable only the desired ones.
+  # This "allow-list" approach prevents new, potentially noisy linters from being
+  # enabled automatically upon a tool upgrade.
+  disable-all: true
+  enable:
+    # Core Go tool for finding suspicious constructs.
+    - govet
+    # Checks for unchecked errors.
+    - errcheck
+    # A powerful suite of static analysis checks for bugs, performance, and style.
+    - staticcheck
+    # Reports unused code.
+    - unused
+    # Checks for misspellings in comments and strings.
+    - misspell
+    # Enforces a reasonable cyclomatic complexity.
+    - gocyclo
+    # A highly configurable and performant replacement for golint.
+    - revive
+    # Security-focused linter.
+    - gosec
+    # Checks for variables that could be declared as constants.
+    - goconst
+    # Checks for unhandled errors with database/sql rows.
+    - rowserrcheck
+
+# Fine-grained settings for individual linters.
+linters-settings:
+  gocyclo:
+    # Set a reasonable complexity limit. Adjust based on team standards.
+    min-complexity: 15
+  misspell:
+    # Specify the locale for dictionary checks.
+    locale: US
+  unused:
+    # Check for unused function parameters. Can be noisy; disable if needed.
+    check-exported: false
+  gosec:
+    # Exclude specific vulnerability checks if they are not applicable.
+    # G101: Look for hardcoded credentials
+    excludes:
+      - G101
+
+# Configuration for formatters (code styling tools).
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+# Fine-grained settings for individual formatters.
+formatters-settings:
+  gofmt:
+    # Apply rewrite rules to modernize Go code automatically.
+    rewrite-rules:
+      - pattern: 'interface{}'
+        replacement: 'any'
+  goimports:
+    # Group internal project imports separately from third-party ones.
+    local-prefixes: github.com/my-org/my-project
+
+# Configuration for how issues are reported and filtered.
 issues:
+  # Do not limit the number of reported issues.
   max-issues-per-linter: 0
   max-same-issues: 0
+
+  # Define rules to exclude specific files or directories from certain linters.
+  exclude-rules:
+    # Allow longer functions in test files.
+    - path: _test\.go
+      linters:
+        - funlen
+    
+    # Exclude all linters from running on auto-generated protobuf files.
+    - path: ".*\\.pb\\.go"
+      linters:
+        - "all"
