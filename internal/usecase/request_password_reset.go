@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// RequestPasswordResetUseCase represents the use case for requesting password reset
 type RequestPasswordResetUseCase struct {
 	logger          *slog.Logger
 	userRepository  UserRepository
@@ -15,6 +16,7 @@ type RequestPasswordResetUseCase struct {
 	taskDistributor TaskDistributor
 }
 
+// NewRequestPasswordResetUseCase creates a new RequestPasswordResetUseCase object
 func NewRequestPasswordResetUseCase(
 	logger *slog.Logger,
 	userRepository UserRepository,
@@ -29,6 +31,7 @@ func NewRequestPasswordResetUseCase(
 	}
 }
 
+// Execute executes the use case
 func (uc *RequestPasswordResetUseCase) Execute(ctx context.Context, email string) error {
 	// Check if user exist
 	user, err := uc.userRepository.FindByEmail(ctx, email)

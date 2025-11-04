@@ -2,14 +2,14 @@ package usecase
 
 import "context"
 
-// VerifyLoginOTPUseCase
+// VerifyLoginOTPUseCase represents the use case for verifying login otp
 type VerifyLoginOTPUseCase struct {
 	loginOTPRepository LoginOTPRepository
 	userRepository     UserRepository
 	loginUseCase       *LoginUserUseCase
 }
 
-// NewVerifyLoginOTPUseCase
+// NewVerifyLoginOTPUseCase creates a new VerifyLoginOTPUseCase object
 func NewVerifyLoginOTPUseCase(
 	loginOTPRepository LoginOTPRepository,
 	userRepository UserRepository,

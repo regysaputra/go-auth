@@ -42,8 +42,8 @@ func (r *PostgresUserRepository) FindByEmail(ctx context.Context, email string) 
 	return &user, nil
 }
 
-// FindById finds the user by ID
-func (r *PostgresUserRepository) FindById(ctx context.Context, id int64) (*domain.User, error) {
+// FindByID finds the user by ID
+func (r *PostgresUserRepository) FindByID(ctx context.Context, id int64) (*domain.User, error) {
 	sql := "SELECT * FROM users WHERE id = $1"
 	row := r.db.QueryRow(ctx, sql, id)
 	var user domain.User

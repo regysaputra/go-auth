@@ -63,8 +63,8 @@ func (r *PostgresVerificationTokenRepository) FindByToken(ctx context.Context, r
 }
 
 // Delete deletes the verification token by ID
-func (r *PostgresVerificationTokenRepository) Delete(ctx context.Context, tokenId int64) error {
+func (r *PostgresVerificationTokenRepository) Delete(ctx context.Context, tokenID int64) error {
 	sql := `DELETE FROM verification_tokens WHERE id = $1`
-	_, err := r.db.Exec(ctx, sql, tokenId)
+	_, err := r.db.Exec(ctx, sql, tokenID)
 	return err
 }

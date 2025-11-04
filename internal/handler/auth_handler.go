@@ -442,6 +442,16 @@ func (h *AuthHandler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	writeSuccess(w, http.StatusOK, response)
 }
 
+// RequestLoginOTP godoc
+// @Summary		Request a login OTP
+// @Description Send a 6-digit login OTP to email
+// @Tags		auth
+// @Produce		json
+// @Param		email body RequestLoginOTPRequest true "Email to verify"
+// @Success 202 {object} SuccessResponse{data=RequestLoginOTPSuccessResponse}
+// @Failure 400 {object} FailResponse{data=RequestLoginOTPFailResponse}
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 func (h *AuthHandler) RequestLoginOTP(w http.ResponseWriter, r *http.Request) {
 	var req RequestLoginOTPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

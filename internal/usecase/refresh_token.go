@@ -56,7 +56,7 @@ func (uc *RefreshTokenUseCase) Execute(ctx context.Context, rawRememberToken str
 	}
 
 	// Verify the user associated with the token still exists
-	_, err = uc.userRepository.FindById(ctx, oldToken.UserID)
+	_, err = uc.userRepository.FindByID(ctx, oldToken.UserID)
 
 	if err != nil {
 		return nil, ErrInvalidCredentials

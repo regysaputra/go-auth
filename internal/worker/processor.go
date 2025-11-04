@@ -57,7 +57,7 @@ func (p *RedisTaskProcessor) handleTaskSendEmailVerificationLink(ctx context.Con
 	}
 
 	p.logger.Info("Processing verification email task", "email", payload.Email)
-	return p.emailSender.SendEmailVerificationLink(payload.Email, payload.Token)
+	return p.emailSender.SendEmailVerificationLink(ctx, payload.Email, payload.Token)
 }
 
 func (p *RedisTaskProcessor) handleTaskSendEmailPasswordResetLink(ctx context.Context, t *asynq.Task) error {
@@ -68,7 +68,7 @@ func (p *RedisTaskProcessor) handleTaskSendEmailPasswordResetLink(ctx context.Co
 	}
 
 	p.logger.Info("Processing password reset email task", "email", payload.Email)
-	return p.emailSender.SendEmailPasswordResetLink(payload.Email, payload.Token)
+	return p.emailSender.SendEmailPasswordResetLink(ctx, payload.Email, payload.Token)
 }
 
 func (p *RedisTaskProcessor) handleTaskSendEmailVerificationCode(ctx context.Context, t *asynq.Task) error {
@@ -79,5 +79,5 @@ func (p *RedisTaskProcessor) handleTaskSendEmailVerificationCode(ctx context.Con
 	}
 
 	p.logger.Info("Processing verification code task", "email", payload.Email)
-	return p.emailSender.SendEmailVerificationCode(payload.Email, payload.Code)
+	return p.emailSender.SendEmailVerificationCode(ctx, payload.Email, payload.Code)
 }

@@ -1,9 +1,11 @@
 package usecase
 
+import "context"
+
 // EmailSender interface
 type EmailSender interface {
-	SendEmailVerificationLink(email string, token string) error
-	SendEmailPasswordResetLink(email string, token string) error
-	SendEmailVerificationCode(email string, code string) error
-	SendEmailLoginOTP(email string, token string) error
+	SendEmailVerificationLink(ctx context.Context, email string, token string) error
+	SendEmailPasswordResetLink(ctx context.Context, email string, token string) error
+	SendEmailVerificationCode(ctx context.Context, email string, code string) error
+	SendEmailLoginOTP(ctx context.Context, email string, token string) error
 }

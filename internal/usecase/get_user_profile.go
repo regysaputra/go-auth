@@ -20,7 +20,7 @@ func NewGetUserProfileUseCase(userRepository UserRepository) *GetUserProfileUseC
 // Execute executes the GetUserProfile use case
 func (uc *GetUserProfileUseCase) Execute(ctx context.Context, userID int64) (*domain.User, error) {
 	// Find user by their id
-	user, err := uc.UserRepository.FindById(ctx, userID)
+	user, err := uc.UserRepository.FindByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound

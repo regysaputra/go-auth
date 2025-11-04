@@ -14,6 +14,7 @@ import (
 // Define a custom key type to avoid collisions in context
 type contextKey string
 
+// UserIDContextKey is the key for the user ID in the context
 const UserIDContextKey = contextKey("UserID")
 
 // AuthMiddleware create a new Chi middleware for JWT authentication
