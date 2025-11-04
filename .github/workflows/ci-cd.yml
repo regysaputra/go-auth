@@ -103,7 +103,7 @@ jobs:
             sed -i 's|image: .*|image: ${{ env.IMAGE_NAME }}:latest|' docker-compose.yml
   
             # Restart the api service
-            docker compose up -d api
+            docker compose up -d app
   
             # (Optional) Run database migrations
             docker compose run migrate
