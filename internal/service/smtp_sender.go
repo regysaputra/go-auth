@@ -22,8 +22,8 @@ type SMTPEmailSender struct {
 	templates *template.Template
 }
 
-// SmtpConfig holds all the necessary configuration for the SMTP sender.
-type SmtpConfig struct {
+// SMTPConfig holds all the necessary configuration for the SMTP sender.
+type SMTPConfig struct {
 	Host     string
 	Port     string
 	Username string
@@ -33,7 +33,7 @@ type SmtpConfig struct {
 }
 
 // NewSMTPEmailSender creates a new SMTP email sender
-func NewSMTPEmailSender(config SmtpConfig) *SMTPEmailSender {
+func NewSMTPEmailSender(config SMTPConfig) *SMTPEmailSender {
 	templates, err := template.ParseFS(internal.TemplateFS, "templates/*.html", "templates/*.txt")
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse email templates: %v", err))
@@ -55,7 +55,7 @@ func (sender *SMTPEmailSender) SendEmailVerificationLink(ctx context.Context, em
 		"VerificationLink": fmt.Sprintf("%s/api/v1/auth/verify-email?token=%s", sender.BaseURL, token),
 	}
 
-	return sender.sendEmail(ctx, email, "Password Reset Link", "password_reset_link_template", data)
+	return sender.sendEmail(ctx, email, "password_reset_link_template", data)
 }
 
 // SendEmailPasswordResetLink connects to the SMTP server and sends the email
@@ -64,7 +64,7 @@ func (sender *SMTPEmailSender) SendEmailPasswordResetLink(ctx context.Context, e
 		"ResetLink": fmt.Sprintf("%s/api/v1/auth/password/reset?token=%s", sender.BaseURL, token),
 	}
 
-	return sender.sendEmail(ctx, email, "Password Reset Link", "password_reset_link_template", data)
+	return sender.sendEmail(ctx, email, "password_reset_link_template", data)
 }
 
 // SendEmailVerificationCode connects to the SMTP server and sends the email
@@ -73,7 +73,7 @@ func (sender *SMTPEmailSender) SendEmailVerificationCode(ctx context.Context, em
 		"Code": code,
 	}
 
-	return sender.sendEmail(ctx, email, "Your Verification Code", "verification_email_template", data)
+	return sender.sendEmail(ctx, email, "verification_email_template", data)
 }
 
 // SendEmailLoginOTP connects to the SMTP server and sends the email
@@ -82,11 +82,11 @@ func (sender *SMTPEmailSender) SendEmailLoginOTP(ctx context.Context, email stri
 		"LoginCode": code,
 	}
 
-	return sender.sendEmail(ctx, email, "Your login code", "login_otp_template", data)
+	return sender.sendEmail(ctx, email, "login_otp_template", data)
 }
 
 // sendEmail is a helper function to construct and send email
-func (sender *SMTPEmailSender) sendEmail(ctx context.Context, email string, subject string, templateName string, data any) error {
+func (sender *SMTPEmailSender) sendEmail(ctx context.Context, email string, templateName string, data any) error {
 	//body.WriteString(fromHeader)
 	//body.WriteString(toHeader)
 	//body.WriteString(subjectHeader)
@@ -139,7 +139,10 @@ func (sender *SMTPEmailSender) sendEmail(ctx context.Context, email string, subj
 	}
 
 	// --- 6. Close the multipart writer to add the final boundary ---
-	mimeWriter.Close()
+	err = mimeWriter.Close()
+	if err != nil {
+		return err
+	}
 
 	// --- 7. Send the email ---
 	auth := smtp.PlainAuth("", sender.Username, sender.Password, sender.Host)

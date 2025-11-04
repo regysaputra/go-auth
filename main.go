@@ -112,7 +112,7 @@ func main() {
 	})
 
 	// Initialize service
-	smtpConfig := service.SmtpConfig{
+	SMTPConfig := service.SMTPConfig{
 		Host:     os.Getenv("SMTP_HOST"),
 		Port:     os.Getenv("SMTP_PORT"),
 		Username: os.Getenv("SMTP_USERNAME"),
@@ -120,7 +120,7 @@ func main() {
 		From:     os.Getenv("SMTP_FROM"),
 		BaseURL:  os.Getenv("BASE_URL"),
 	}
-	emailSender := service.NewSMTPEmailSender(smtpConfig)
+	emailSender := service.NewSMTPEmailSender(SMTPConfig)
 
 	// Initialize repositories
 	userRepository := repository.NewPostgresUserRepository(dbpool)
