@@ -86,11 +86,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
           script: |
             set -ex
-            # Go to your app's directory on the server
             cd go-auth
-  
-            # Update environment variables (if they're not in the compose file)
-            # Make sure your .env file on the server has the correct production URLs
+            
             export DATABASE_URL=${{ secrets.DATABASE_URL }}
             export REDIS_URL=${{ secrets.REDIS_URL }}
             export SMTP_HOST=${{ secrets.SMTP_HOST }}
@@ -101,15 +98,9 @@ jobs:
             export BASE_URL=${{ secrets.BASE_URL }}
             export SECRET_KEY=${{ secrets.SECRET_KEY }}
   
-            # Pull the new image from GHCR
-            # We must log in to the private GHCR registry first
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker pull ${{ env.IMAGE_NAME }}:latest
   
-            # Update the image field in your docker-compose.yml on the server
-            # This is a robust way to ensure it uses the new image
-            sed -i "s|image: .*|image: ghcr.io/regysaputra/go-auth:latest|" docker-compose.yml
+            docker compose down || true
             timeout 60 docker compose up -d app || (echo "docker compose failed" && docker compose logs app)
-  
-            # (Optional) Run database migrations
             timeout 30 docker compose run --rm migrate || true
