@@ -108,7 +108,7 @@ jobs:
   
             # Update the image field in your docker-compose.yml on the server
             # This is a robust way to ensure it uses the new image
-            sed -i "s|image: .*|image: ghcr.io/regysaputra/regysaputra/go-auth:latest|" docker-compose.yml
+            sed -i "s|image: .*|image: ghcr.io/regysaputra/go-auth:latest|" docker-compose.yml
             timeout 60 docker compose up -d app || (echo "docker compose failed" && docker compose logs app)
   
             # (Optional) Run database migrations
