@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [ main ]
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/regysaputra/${{ github.repository }}
 jobs:
   build-and-push:
     # Run the job on a fresh Ubuntu server provided by GitHub
