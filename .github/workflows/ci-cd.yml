@@ -71,6 +71,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Test SSH
+        run: |
+          echo "${{ secrets.SERVER_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+          ssh -vvv -i key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'echo connected'
+
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
         with:
