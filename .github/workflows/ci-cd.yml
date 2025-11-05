@@ -80,10 +80,12 @@ jobs:
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
         with:
+          timeout: 120s
           host: ${{ secrets.SERVER_HOST }}     # e.g., '123.45.67.89'
           username: ${{ secrets.SERVER_USER }} # e.g., 'ubuntu'
           key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
           script: |
+            set -ex
             # Go to your app's directory on the server
             cd go-auth
   
@@ -106,10 +108,8 @@ jobs:
   
             # Update the image field in your docker-compose.yml on the server
             # This is a robust way to ensure it uses the new image
-            sed -i 's|image: .*|image: ${{ env.IMAGE_NAME }}:latest|' docker-compose.yml
-  
-            # Restart the api service
-            docker compose up -d app
+            sed -i "s|image: .*|image: ghcr.io/regysaputra/regysaputra/go-auth:latest|" docker-compose.yml
+            timeout 60 docker compose up -d app || (echo "docker compose failed" && docker compose logs app)
   
             # (Optional) Run database migrations
-            docker compose run migrate
+            timeout 30 docker compose run migrate || true
