@@ -112,4 +112,4 @@ jobs:
             timeout 60 docker compose up -d app || (echo "docker compose failed" && docker compose logs app)
   
             # (Optional) Run database migrations
-            timeout 30 docker compose run migrate || true
+            timeout 30 docker compose run --rm migrate || true

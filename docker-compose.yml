@@ -47,7 +47,11 @@ services:
     container_name: migrate
     volumes:
       - ./db/migrations:/migrations
-    command: "-path db/migrations -database postgres://regy:123@db:5433/auth?sslmode=disable up"
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://regy:123@db:5432/auth?sslmode=disable",
+      "up"
+    ]
     depends_on:
       - db
 
