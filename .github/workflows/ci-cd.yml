@@ -73,7 +73,7 @@ jobs:
 
       - name: Test SSH
         run: |
-          echo "${{ secrets.SERVER_SSH_KEY }}" > key.pem
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
           ssh -vvv -i key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'echo connected'
 
