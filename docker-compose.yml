@@ -1,6 +1,7 @@
 services:
   app:
     image: ghcr.io/regysaputra/go-auth:latest
+    container_name: app
     ports:
       - "8080:8080"
     environment:
@@ -20,12 +21,13 @@ services:
     restart: always
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: redis
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
     restart: always
 
   db:
@@ -45,8 +47,12 @@ services:
     image: migrate/migrate
     volumes:
       - ./db/migrations:/migrations
-    command: >
-      -path /migrations -database "postgres://regy:123@db:5432/auth?sslmode=disable" up
+    entrypoint: ["/usr/local/bin/migrate"]
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://regy:123@db:5432/auth?sslmode=disable",
+      "up"
+    ]
     depends_on:
       - db
 
