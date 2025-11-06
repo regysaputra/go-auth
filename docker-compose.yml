@@ -45,11 +45,8 @@ services:
     image: migrate/migrate
     volumes:
       - ./db/migrations:/migrations
-    command: [
-      "-path", "/migrations",
-      "-database", "postgres://regy:123@db:5432/auth?sslmode=disable",
-      "up"
-    ]
+    command: >
+      -path /migrations -database "postgres://regy:123@db:5432/auth?sslmode=disable" up
     depends_on:
       - db
 
