@@ -20,7 +20,7 @@ services:
     restart: always
 
   redis:
-    image: redis:8
+    image: redis:7-alpine
     container_name: redis
     ports:
       - "6379:6379"
@@ -29,7 +29,7 @@ services:
     restart: always
 
   db:
-    image: postgres:18-alpine
+    image: postgres:17-alpine
     container_name: db
     restart: always
     environment:
@@ -46,13 +46,12 @@ services:
     volumes:
       - ./db/migrations:/migrations
     command: [
-      "-path", "db/migrations",
+      "-path", "/migrations",
       "-database", "postgres://regy:123@db:5432/auth?sslmode=disable",
       "up"
     ]
     depends_on:
       - db
-
 
 volumes:
   pg-data:
