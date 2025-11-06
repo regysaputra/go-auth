@@ -80,6 +80,9 @@ jobs:
             set -ex
             cd go-auth
             
+            echo "🔄 Resetting local changes..."
+            git reset --hard HEAD
+            
             echo "🔄 Pulling latest configuration..."
             git pull origin main
             
