@@ -101,6 +101,13 @@ jobs:
             echo "🧹 Stopping old containers..."
             docker compose down
             
+            echo "Cleaning up old volumes and images..."
+            docker system prune -f
+            
+            echo "⬇️ Pulling Redis and PostgreSQL images..."
+            docker pull redis:latest
+            docker pull postgres:17-alpine
+            
             echo "🧩 Starting dependencies..."
             docker compose up -d db redis
 
