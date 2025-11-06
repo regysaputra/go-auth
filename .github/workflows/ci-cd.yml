@@ -87,20 +87,34 @@ jobs:
           script: |
             set -ex
             cd go-auth
-            
-            export DATABASE_URL=${{ secrets.DATABASE_URL }}
-            export REDIS_URL=${{ secrets.REDIS_URL }}
-            export SMTP_HOST=${{ secrets.SMTP_HOST }}
-            export SMTP_PORT=${{ secrets.SMTP_PORT }}
-            export SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
-            export SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
-            export SMTP_FROM=${{ secrets.SMTP_FROM }}
-            export BASE_URL=${{ secrets.BASE_URL }}
-            export SECRET_KEY=${{ secrets.SECRET_KEY }}
-  
+
+            # Login to GHCR
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker pull ${{ env.IMAGE_NAME }}:latest
-  
-            docker compose down || true
-            timeout 60 docker compose up -d app || (echo "docker compose failed" && docker compose logs app)
+
+            # Update docker-compose image line
+            sed -i "s|image: .*|image: ghcr.io/regysaputra/go-auth:latest|" docker-compose.yml
+
+            # Restart the app
+            docker compose up -d app
+
+            # 🕒 Wait until PostgreSQL is ready
+            echo "Waiting for PostgreSQL to be ready..."
+            timeout 60 bash -c '
+              until docker exec db pg_isready -U regy -d auth; do
+                sleep 2
+              done
+            '
+            echo "✅ PostgreSQL is ready"
+
+            # 🕒 Wait until Redis is ready
+            echo "Waiting for Redis to be ready..."
+            timeout 60 bash -c '
+              until docker exec redis redis-cli ping | grep -q PONG; do
+                sleep 2
+              done
+            '
+            echo "✅ Redis is ready"
+
+            # Run migrations safely
             timeout 30 docker compose run --rm migrate || true
