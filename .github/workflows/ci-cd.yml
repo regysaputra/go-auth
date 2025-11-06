@@ -80,6 +80,9 @@ jobs:
             set -ex
             cd go-auth
             
+            echo "🔄 Pulling latest configuration..."
+            git pull origin main
+            
             echo "🔐 Logging in to GHCR..."
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
