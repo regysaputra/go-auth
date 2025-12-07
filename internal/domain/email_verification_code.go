@@ -1,24 +1,16 @@
 package domain
 
 import (
-	"errors"
-	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // EmailVerificationCode to hold data of email verification code
 type EmailVerificationCode struct {
-	ID        int64
+	ID        uuid.UUID
 	Email     string
 	CodeHash  string
 	ExpiresAt time.Time
-}
-
-// Validate email verification code
-func (obj *EmailVerificationCode) Validate() error {
-	if !strings.Contains(obj.Email, "@") {
-		return errors.New("invalid email format")
-	}
-
-	return nil
+	CreatedAt time.Time
 }

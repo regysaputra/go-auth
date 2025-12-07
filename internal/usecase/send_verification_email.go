@@ -2,11 +2,11 @@ package usecase
 
 import (
 	"context"
-	"time"
 )
 
 // SendEmailVerificationLinkUseCase represents the use case for sending an email verification link
 type SendEmailVerificationLinkUseCase struct {
+	tokenRepository  TokenRepository
 	verifyRepository VerificationTokenRepository
 	taskDistributor  TaskDistributor
 }
@@ -25,21 +25,21 @@ func NewSendEmailVerificationLinkUseCase(
 // Execute executes the use case
 func (uc *SendEmailVerificationLinkUseCase) Execute(ctx context.Context, userID int64, email string) error {
 	// Generate verification token
-	rawToken, err := uc.verifyRepository.Generate()
+	token, err := uc.tokenRepository.GenerateOpaqueToken()
 	if err != nil {
 		return err
 	}
 
 	// Hash the token
-	tokenHash := uc.verifyRepository.Hash(rawToken)
+	tokenHash := uc.tokenRepository.HashToken(token)
 
-	// Save the hash token to repository
-	err = uc.verifyRepository.Save(ctx, userID, tokenHash, time.Hour)
+	// Save the hash token to a repository
+	err = uc.verifyRepository.Save(ctx, userID, tokenHash)
 	if err != nil {
 		return err
 	}
 
-	err = uc.taskDistributor.DistributeTaskSendEmailVerificationLink(ctx, email, rawToken)
+	err = uc.taskDistributor.DistributeTaskSendEmailVerificationLink(ctx, email, token)
 
 	if err != nil {
 		return err

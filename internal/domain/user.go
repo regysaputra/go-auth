@@ -1,26 +1,13 @@
 package domain
 
-import (
-	"errors"
-	"strings"
-)
+import "time"
 
 // User represent a user in the system
-// @Description User information
-// @Description with id, name, email, and password
 type User struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Verified bool   `json:"verified"`
-}
-
-// Validate user
-func (u *User) Validate() error {
-	if !strings.Contains(u.Email, "@") {
-		return errors.New("invalid email format")
-	}
-
-	return nil
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Password  string    `json:"password"`
+	Verified  bool      `json:"verified"`
+	CreatedAt time.Time `json:"created_at"`
 }

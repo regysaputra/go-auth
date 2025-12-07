@@ -4,13 +4,16 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // LoginOTP represents a login OTP
 type LoginOTP struct {
-	ID        int64
+	ID        uuid.UUID
 	Email     string
 	CodeHash  string
+	CreatedAt time.Time
 	ExpiresAt time.Time
 }
 

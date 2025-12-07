@@ -1,0 +1,757 @@
+openapi: 3.1.0
+info:
+  title: Authentication Service API
+  description: This is the API for the Authentication Service.
+  version: 1.0.0
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+components:
+  # Define all security schemes
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "JWT Authorization header. Example: 'Bearer (token)'"
+
+  # Define all reusable schemas (DTOs and Responses)
+  schemas:
+    LoginUser:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Egi Putra
+        email:
+          type: string
+          example: anon@gmail.com
+
+    # Request Body
+    RegisterUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Egi Putra
+        email:
+          type: string
+          example: user@domain.com
+        password:
+          type: string
+          example: p@$W0rD!
+    RegisterUserWithCodeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Egi Putra
+        password:
+          type: string
+          example: p@$W0rD!
+        registration_token:
+          type: string
+          example: fyr7fyn73dtwbcvv.uufnste7cfidpoeirm
+    LoginRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Egi Putra
+        password:
+          type: string
+          example: p@$W0rD!
+    PasswordResetRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: anon@gmail.com
+    ResetPasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          example: p@$W0rD!
+    RequestVerificationCodeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: anon@gmail.com
+    VerifyCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 123456
+    RequestLoginOTPRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          example: anon@gmail.com
+    VerifyLoginOTPRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 129736
+
+    # Response body
+    RegisterUserResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: user created successfully, please check your email to verify your account
+    UserProfileResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Egi Putra
+        email:
+          type: string
+          example: anon@gmail.com
+    LoginResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/LoginUser'
+        access_token:
+          type: string
+          example: "access_token"
+        refresh_token:
+          type: string
+          example: "refresh_token"
+    RefreshTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "access_token"
+        refresh_token:
+          type: string
+          example: "refresh_token"
+    RequestCodeResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "a verification code has been sent to your email"
+    VerifyCodeResponse:
+      type: object
+      properties:
+        registration_token:
+          type: string
+          example: "registration_token"
+
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        data:
+          type: object
+          description: "The payload of the response, which varies by endpoint."
+
+    # JSend 'fail' response for 4xx errors
+    JSendFailResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "fail"
+        data:
+          type: object
+          description: "An object containing details about the failed validation or request."
+
+    # JSend 'error' response for 5xx errors
+    JSendErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "error"
+        message:
+          type: string
+          example: "internal server error"
+
+    EmailExistsError:
+      allOf:
+        - $ref: "#/components/schemas/JSendFailResponse"
+        - properties:
+            data:
+              type: object
+              properties:
+                message:
+                  type: string
+                  const: "user with this email already exists"
+    InvalidRequestBodyError:
+      allOf:
+        - $ref: "#/components/schemas/JSendFailResponse"
+        - properties:
+            data:
+              type: object
+              properties:
+                message:
+                  type: string
+                  const: "invalid request body"
+    TokenNotFoundError:
+      allOf:
+        - $ref: "#/components/schemas/JSendFailResponse"
+        - properties:
+            data:
+              type: object
+              properties:
+                message:
+                  type: string
+                  const: "token not found"
+    InvalidCredentialsError:
+      allOf:
+        - $ref: "#/components/schemas/JSendFailResponse"
+        - properties:
+            data:
+              type: object
+              properties:
+                message:
+                  type: string
+                  const: "invalid credentials"
+    InvalidTokenError:
+      allOf:
+        - $ref: "#/components/schemas/JSendFailResponse"
+        - properties:
+            data:
+              type: object
+              properties:
+                message:
+                  type: string
+                  const: "invalid or expired token"
+    InvalidVerificationCodeError:
+      allOf:
+        - $ref: "#/components/schemas/JSendFailResponse"
+        - properties:
+            data:
+              type: object
+              properties:
+                message:
+                  type: string
+                  const: "invalid or expired verification code"
+
+paths:
+  /api/v1/users:
+    post:
+      tags:
+        - Users
+      summary: Register user with verification token
+      description: Register a new user using a verification token obtained from /auth/request-code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserWithCodeRequest'
+      responses:
+        '201':
+          description: User registered successfully and login the user
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad request - Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/JSendFailResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          email: [ "email field is required", "email must be a valid email address" ]
+                          password: [ "password field is required", "password must be at least 8 characters" ]
+                          verification_token: [ "verification_token field is required" ]
+        '409':
+          description: Conflict - Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailExistsError"
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+
+  /api/v1/users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Retrieve the profile information of the authenticated user
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidTokenError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+
+  /api/v1/auth:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate a user with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad request - Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/JSendFailResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          email: [ "email field is required", "email must be a valid email address" ]
+                          password: [ "password field is required", "password must be at least 8 characters" ]
+        '401':
+          description: Unauthorized - Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidCredentialsError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Rotate token
+      description: Recreate access token and rotate old refresh token with new refresh token
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: Refresh token for non-web clients
+
+      parameters:
+      - in: cookie
+        name: refresh_token
+        schema:
+          type: string
+        required: false
+        description: Refresh token for web clients (HttpOnly cookie)
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          description: Unauthorized - Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidTokenError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+  /api/v1/auth/verify-email:
+    get:
+      tags:
+        - Authentication
+      summary: Verify email address
+      description: Verify user email using the token sent to their email
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+          description: Email verification token
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad request - Token not provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenNotFoundError'
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidTokenError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+  /api/v1/auth/request-code:
+    post:
+      tags:
+        - Authentication
+      summary: Request email verification code
+      description: Request a verification code to be sent to the user's email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestVerificationCodeRequest'
+      responses:
+        '202':
+          description: Verification code sent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/RequestCodeResponse'
+        '400':
+          description: Bad request - Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/JSendFailResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          email: [ "email field is required", "email must be a valid email address" ]
+        '409':
+          description: Conflict - Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailExistsError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+  /api/v1/auth/verify-code:
+    post:
+      tags:
+        - Authentication
+      summary: Verify email code
+      description: Verify the code sent to user's email and receive a verification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyCodeRequest'
+      responses:
+        '200':
+          description: Code verified successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/VerifyCodeResponse'
+        '400':
+          description: Bad request - Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/JSendFailResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          email: [ "email field is required", "email must be a valid email address" ]
+        '422':
+          description: Unprocessable entity - Invalid verification code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidVerificationCodeError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+
+  /api/v1/auth/password/request-reset:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Request a password reset link to be sent to the user's email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '202':
+          description: Password reset link sent (always returns success to prevent email enumeration)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          message: 'a password reset link has been sent'
+        '400':
+          description: Bad request - Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/JSendFailResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          email: [ "email field is required", "email must be a valid email address" ]
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+  /api/v1/auth/password/reset:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password
+      description: Reset user password using the token sent to their email
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+          description: Password reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          message: "a password has been reset successfully"
+        '400':
+          description: Bad request - Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/JSendFailResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          email: [ "email field is required", "email must be a valid email address" ]
+        '401':
+          description: Unauthorized - Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidTokenError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+
+  /api/v1/auth/otp/request:
+    post:
+      tags:
+        - Authentication
+      summary: Request login OTP
+      description: Request a one-time password to be sent to the user's email for login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestLoginOTPRequest'
+      responses:
+        '202':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          message: "a login otp has been sent to your email"
+        '400':
+          description: Bad request - Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/JSendFailResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          email: [ "email field is required", "email must be a valid email address" ]
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'
+  /api/v1/auth/otp/verify:
+    post:
+      tags:
+        - Authentication
+      summary: Verify login OTP
+      description: Verify login OTP that sent to the user's email and login the user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyLoginOTPRequest'
+      responses:
+        '202':
+          description: Login OTP is valid and login the user
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad request - Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/JSendFailResponse'
+                  - properties:
+                      data:
+                        type: object
+                        example:
+                          code: [ "code field is required" ]
+        '401':
+          description: Unauthorized - Invalid credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidCredentialsError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JSendErrorResponse'

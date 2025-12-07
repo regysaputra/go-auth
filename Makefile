@@ -4,7 +4,7 @@ include .env
 export
 
 # The .PHONY directive tells make that these are not actual files to be built.
-.PHONY: run build test clean swag migrate-create migrate-up migrate-down migrate-fix migrate-reset docker-redis ssh
+.PHONY: run build test clean swag migrate-create migrate-up migrate-down migrate-fix migrate-reset docker-up docker-container-rm docker-volume-rm docker-dev docker-destroy psql ssh dev dev-up dev-down dev-logs dev-clean dev prod prod-up
 
 # Runs the main application
 run:
@@ -33,7 +33,7 @@ swag:
 
 migrate-create:
 	@echo "Create migration file..."
-	@migrate create -ext sql -dir db/migrations -seq $(args)
+	@migrate create -ext sql -dir internal/infrastructure/db/migrations -seq $(args)
 
 migrate-up:
 	@echo "Running database migration up..."
@@ -49,14 +49,62 @@ migrate-fix:
 
 migrate-reset:
 	@echo "Resetting database..."
-	@migrate -path db/migrations -database "$(DATABASE_URL)" up
+	@migrate -path internal/infrastructure/db/migrations -database "$(DATABASE_URL)" up
 	@echo "Applying all migration..."
-	@migrate -path db/migrations -database "$(DATABASE_URL)" down -all
+	@migrate -path internal/infrastructure/db/migrations -database "$(DATABASE_URL)" down -all
 	@echo "Database reset complete"
 
-docker-redis:
-	@echo "Running redis..."
-	@docker run --name auth-redis -p 6379:6379 -d redis
+docker-up:
+	@echo "Builds containers..."
+	@docker compose up -d
+
+docker-container-rm:
+	@echo "Remove all container..."
+	@docker rm -v -f $$(docker ps -qa)
+
+docker-volume-rm:
+	@echo "Remove all volume..."
+	@docker volume prune -a -f
+
+docker-dev:
+	@echo "Running docker in dev mode..."
+	@docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+docker-destroy:
+	@echo "Deep clean docker..."
+	@docker system prune -a --force
+	@docker volume prune -a --force
+
+psql:
+	@echo "Connect to postgresql..."
+	@psql postgresql://regy:123@localhost:5433/auth
 
 ssh:
 	@ssh -i oci-private.key ubuntu@161.118.206.173
+
+prod:
+	@docker compose -f docker-compose.yml build --no-cache
+
+prod-up:
+	@docker compose -f docker-compose.yml up
+
+prod-rebuild:
+	@docker compose
+
+# Development
+dev: ## Start development environment
+	@docker compose -f docker-compose.dev.yml build --no-cache
+
+dev-up:
+	@docker compose -f docker-compose.dev.yml up
+
+dev-down: ## Stop development environment
+	@docker compose -f docker-compose.dev.yml down
+
+dev-logs: ## View development logs
+	@docker compose -f docker-compose.dev.yml logs -f
+
+dev-clean: ## Clean development data and rebuild
+	@docker compose -f docker-compose.dev.yml down -v
+	@docker compose -f docker-compose.dev.yml up --build
+

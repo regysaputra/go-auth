@@ -3,8 +3,8 @@ package usecase
 import (
 	"auth/internal/domain"
 	"context"
-	"database/sql"
 	"errors"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -20,7 +20,7 @@ type RegisterUserWithCodeUseCase struct {
 	loginUseCase      *LoginUserUseCase
 }
 
-// Claims represents the JWT claims
+// Claims represent the JWT claims
 type Claims struct {
 	Subject string `json:"sub"`
 	Issuer  string `json:"iss"`
@@ -43,8 +43,29 @@ func NewRegisterUserWithCodeUseCase(
 }
 
 // Execute executes the RegisterUserWithCode use case
-func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verificationToken string, name string, password string) (*LoginToken, error) {
-	// Decode & verify JWT signature
+func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, name string, password string, verificationToken string, userAgent string, ipAddress net.IP) (*LoginResult, error) {
+	// Field validation
+	validationErrors := NewValidationErrors()
+
+	if name == "" {
+		validationErrors.Add("name", "name field is required")
+	}
+
+	if password == "" {
+		validationErrors.Add("password", "password field is required")
+	} else if len(password) < 8 {
+		validationErrors.Add("password", "password must be at least 8 characters")
+	}
+
+	if verificationToken == "" {
+		validationErrors.Add("verification_token", "verification_token field is required")
+	}
+
+	if validationErrors.HasErrors() {
+		return nil, validationErrors
+	}
+
+	// Decode & verify token
 	token, err := jwt.ParseWithClaims(verificationToken, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -59,17 +80,13 @@ func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verification
 
 	// Extract claims
 	claims, ok := token.Claims.(*Claims)
+
 	if !ok || !token.Valid {
 		return nil, ErrInvalidToken
 	}
 
 	// Check expiration time
-	if claims.Expires > time.Now().Unix() {
-		return nil, ErrInvalidToken
-	}
-
-	// Check purpose
-	if claims.Purpose != "verificationToken" {
+	if claims.Expires < time.Now().Unix() {
 		return nil, ErrInvalidToken
 	}
 
@@ -79,29 +96,14 @@ func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verification
 		return nil, ErrInvalidToken
 	}
 
-	// Add validation for empty fields
-	if strings.TrimSpace(name) == "" {
-		return nil, ErrEmptyName
-	}
-	if strings.TrimSpace(password) == "" {
-		return nil, ErrEmptyPassword
-	}
-
-	// password validation
-	if len(password) < 8 {
-		return nil, ErrPasswordTooShort
-	}
-
 	// Check if a user already exists
-	_, err = uc.userRepository.IsVerifiedUserExists(ctx, email)
+	exists, err := uc.userRepository.IsVerifiedUserExists(ctx, email)
 
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
+		return nil, err
 	}
 
-	if err == nil {
+	if exists == true {
 		return nil, ErrEmailExists
 	}
 
@@ -116,6 +118,7 @@ func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verification
 		Name:     name,
 		Email:    email,
 		Password: string(hashedPassword),
+		Verified: true,
 	}
 
 	if err := uc.userRepository.Save(ctx, user); err != nil {
@@ -123,5 +126,5 @@ func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, verification
 	}
 
 	// Generate login token
-	return uc.loginUseCase.GenerateToken(ctx, user.ID, false)
+	return uc.loginUseCase.GenerateLoginToken(ctx, user, false, userAgent, ipAddress)
 }

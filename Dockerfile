@@ -1,35 +1,34 @@
-# --- Build Stage ---
-# We use a specific Go version in a lightweight Alpine container as our build environment.
+# Build stage
 FROM golang:1.25-alpine AS builder
-
-# Install build dependencies. CGO is needed for pgx.
-RUN apk add --no-cache git build-base
 
 WORKDIR /app
 
-# Copy and download dependencies first to leverage Docker's layer caching.
+# Copy go mod files
 COPY go.mod go.sum ./
+RUN go mod download
 
-# Copy the rest of the source code.
+# Copy source code
 COPY . .
 
-# Build the application.
-# We build a statically linked binary to keep the final image small and self-contained.
-# The 'templates' are already embedded, so we don't need to copy them.
-RUN CGO_ENABLED=1 GOOS=linux go build -mod=vendor -ldflags '-w -s' -o /app/server ./main.go
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -a -installsuffix cgo -o main ./cmd/server
 
-# --- Final Stage ---
-# We use a minimal Alpine image for a tiny, secure final container.
+# Final stage
 FROM alpine:latest
 
-# Add SSL certificates
-RUN apk add --no-cache ca-certificates
+RUN apk --no-cache add ca-certificates
 
-# Copy the built application binary from the builder stage.
-COPY --from=builder /app/server /app/server
+WORKDIR /app
 
-# Expose the port our application listens on.
+# Copy the binary from builder
+COPY --from=builder /app/main .
+
+# Copy the public directory with openapi.yml
+COPY --from=builder /app/public ./public
+
+# Copy templates directory
+COPY --from=builder /app/templates ./templates
+
 EXPOSE 8080
 
-# Set the command to run when the container starts.
-CMD ["/app/server"]
+CMD ["./main"]

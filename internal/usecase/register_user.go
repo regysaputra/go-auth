@@ -28,46 +28,42 @@ func NewRegisterUserUseCase(
 }
 
 // Execute executes the register user use case
-func (uc *RegisterUserUseCase) Execute(ctx context.Context, name, email, password string) (*domain.User, error) {
-	// Add validation for empty fields
-	if strings.TrimSpace(name) == "" {
-		return nil, ErrEmptyName
-	}
-	if strings.TrimSpace(email) == "" {
-		return nil, ErrEmptyEmail
-	}
-	if strings.TrimSpace(password) == "" {
-		return nil, ErrEmptyPassword
+func (uc *RegisterUserUseCase) Execute(ctx context.Context, name, email, password string) error {
+	// Field validation
+	validationErrors := NewValidationErrors()
+	email = strings.TrimSpace(email)
+	if email == "" {
+		validationErrors.Add("email", "email field is required")
+	} else if !strings.Contains(email, "@") {
+		validationErrors.Add("email", "email must be a valid email address")
 	}
 
-	// email validation (domain level)
-	userEmail := &domain.User{Email: email}
-
-	if err := userEmail.Validate(); err != nil {
-		return nil, ErrInvalidEmail
+	if password == "" {
+		validationErrors.Add("password", "password field is required")
+	} else if len(password) < 8 {
+		validationErrors.Add("password", "password must be at least 8 characters")
 	}
 
-	// password validation
-	if len(password) < 8 {
-		return nil, ErrPasswordTooShort
+	if validationErrors.HasErrors() {
+		return validationErrors
 	}
 
-	// Check if user already exist
+	// Check if a user already exists
 	_, err := uc.userRepository.FindByEmail(ctx, email)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
+			return err
 		}
 	}
 
 	if err == nil {
-		return nil, ErrEmailExists
+		return ErrEmailExists
 	}
 
 	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Create the domain user
@@ -75,16 +71,17 @@ func (uc *RegisterUserUseCase) Execute(ctx context.Context, name, email, passwor
 		Name:     name,
 		Email:    email,
 		Password: string(hashedPassword),
+		Verified: false,
 	}
 
 	if err := uc.userRepository.Save(ctx, user); err != nil {
-		return nil, err
+		return err
 	}
 
 	err = uc.sendEmailVerificationLinkUseCase.Execute(ctx, user.ID, user.Email)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return user, nil
+	return nil
 }

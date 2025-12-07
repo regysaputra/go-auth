@@ -1,11 +1,9 @@
 package usecase
 
 import (
-	"auth/internal/domain"
 	"context"
 	"log/slog"
 	"strings"
-	"time"
 )
 
 // RequestLoginOTPUseCase represents the request login OTP use case object
@@ -33,17 +31,20 @@ func NewRequestLoginOTPUseCase(
 
 // Execute executes the request login OTP use case
 func (uc *RequestLoginOTPUseCase) Execute(ctx context.Context, email string) error {
-	// Validate input
+	// Field validation
+	validationErrors := NewValidationErrors()
 	email = strings.TrimSpace(email)
 	if email == "" {
-		return ErrEmptyEmail
+		validationErrors.Add("email", "email field is required")
+	} else if !strings.Contains(email, "@") {
+		validationErrors.Add("email", "email must be a valid email address")
 	}
 
-	if err := (&domain.EmailVerificationCode{Email: email}).Validate(); err != nil {
-		return ErrInvalidEmail
+	if validationErrors.HasErrors() {
+		return validationErrors
 	}
 
-	// Check if user exist and verified
+	// Check if a user exists and verified
 	exist, err := uc.userRepository.IsVerifiedUserExists(ctx, email)
 
 	if err != nil {
@@ -51,21 +52,22 @@ func (uc *RequestLoginOTPUseCase) Execute(ctx context.Context, email string) err
 	}
 
 	if !exist {
-		// Don't reveal to client if user doesn't exist to prevent enumeration attack
+		// Don't reveal to a client if user doesn't exist to prevent enumeration attack
 		uc.logger.Warn("login OTP request for user that doesn't exist")
 		return nil
 	}
 
 	// Generate code and hash
-	code, err := uc.loginOTPRepository.Generate(6)
+	code, err := uc.loginOTPRepository.GenerateCode(6)
 	if err != nil {
 		return err
 	}
 
-	codeHash := uc.loginOTPRepository.Hash(code)
+	codeHash := uc.loginOTPRepository.HashCode(code)
 
 	// Save
-	err = uc.loginOTPRepository.Save(ctx, email, codeHash, 5*time.Minute)
+	err = uc.loginOTPRepository.Save(ctx, email, codeHash)
+
 	if err != nil {
 		return err
 	}

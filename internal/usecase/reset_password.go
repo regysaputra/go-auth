@@ -10,27 +10,37 @@ import (
 
 // ResetPasswordUseCase represents the reset password use case object
 type ResetPasswordUseCase struct {
-	userRepository  UserRepository
-	tokenRepository PasswordResetTokenRepository
+	userRepository               UserRepository
+	tokenRepository              TokenRepository
+	passwordResetTokenRepository PasswordResetTokenRepository
 }
 
 // NewResetPasswordUseCase creates a new reset password use case object
-func NewResetPasswordUseCase(userRepository UserRepository, tokenRepository PasswordResetTokenRepository) *ResetPasswordUseCase {
+func NewResetPasswordUseCase(userRepository UserRepository, tokenRepository TokenRepository, passwordResetTokenRepository PasswordResetTokenRepository) *ResetPasswordUseCase {
 	return &ResetPasswordUseCase{
-		userRepository:  userRepository,
-		tokenRepository: tokenRepository,
+		userRepository:               userRepository,
+		tokenRepository:              tokenRepository,
+		passwordResetTokenRepository: passwordResetTokenRepository,
 	}
 }
 
 // Execute executes the reset password use case
 func (uc *ResetPasswordUseCase) Execute(ctx context.Context, token, newPassword string) error {
-	// Length of new password must be greater than 7
-	if len(newPassword) < 8 {
-		return ErrPasswordTooShort
+	// Field validation
+	validationErrors := NewValidationErrors()
+	if newPassword == "" {
+		validationErrors.Add("password", "password field is required")
+	} else if len(newPassword) < 8 {
+		validationErrors.Add("password", "password must be at least 8 characters")
+	}
+
+	if validationErrors.HasErrors() {
+		return validationErrors
 	}
 
 	// Check if hashed token is exist in database
-	resetToken, err := uc.tokenRepository.FindByToken(ctx, uc.tokenRepository.Hash(token))
+	tokenHash := uc.tokenRepository.HashToken(token)
+	resetToken, err := uc.passwordResetTokenRepository.FindByToken(ctx, tokenHash)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrInvalidToken
@@ -52,7 +62,7 @@ func (uc *ResetPasswordUseCase) Execute(ctx context.Context, token, newPassword 
 	}
 
 	// Invalidate the token after use
-	err = uc.tokenRepository.Delete(ctx, resetToken.ID)
+	err = uc.passwordResetTokenRepository.Delete(ctx, resetToken.ID)
 	if err != nil {
 		return err
 	}

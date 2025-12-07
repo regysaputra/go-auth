@@ -1,10 +1,8 @@
 package usecase
 
 import (
-	"auth/internal/domain"
 	"context"
 	"strings"
-	"time"
 )
 
 // RequestVerificationCodeUseCase represents the request verification code use case object
@@ -29,16 +27,17 @@ func NewRequestVerificationCodeUseCase(
 
 // Execute executes the request verification code use case
 func (uc *RequestVerificationCodeUseCase) Execute(ctx context.Context, email string) error {
-	// Email validation
+	// Field validation
+	validationErrors := NewValidationErrors()
 	email = strings.TrimSpace(email)
 	if email == "" {
-		return ErrEmptyEmail
+		validationErrors.Add("email", "email field is required")
+	} else if !strings.Contains(email, "@") {
+		validationErrors.Add("email", "email must be a valid email address")
 	}
 
-	userEmail := &domain.EmailVerificationCode{Email: email}
-	err := userEmail.Validate()
-	if err != nil {
-		return ErrInvalidEmail
+	if validationErrors.HasErrors() {
+		return validationErrors
 	}
 
 	// Check if verified user exists with given email
@@ -58,10 +57,10 @@ func (uc *RequestVerificationCodeUseCase) Execute(ctx context.Context, email str
 		return err
 	}
 
-	hashCode := uc.emailVerificationCodeRepository.Hash(code)
+	hashCode := uc.emailVerificationCodeRepository.HashCode(code)
 
 	// Save to db
-	err = uc.emailVerificationCodeRepository.Save(ctx, email, hashCode, 2*time.Minute)
+	err = uc.emailVerificationCodeRepository.Save(ctx, email, hashCode)
 	if err != nil {
 		return err
 	}

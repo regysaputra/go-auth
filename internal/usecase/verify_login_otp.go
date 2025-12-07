@@ -1,6 +1,11 @@
 package usecase
 
-import "context"
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"net"
+)
 
 // VerifyLoginOTPUseCase represents the use case for verifying login otp
 type VerifyLoginOTPUseCase struct {
@@ -23,11 +28,17 @@ func NewVerifyLoginOTPUseCase(
 }
 
 // Execute verify login otp
-func (uc *VerifyLoginOTPUseCase) Execute(ctx context.Context, code string) (*LoginToken, error) {
-	// Validate code
-	hashCode := uc.loginOTPRepository.Hash(code)
-	err := uc.loginOTPRepository.IsCodeExist(ctx, hashCode)
+func (uc *VerifyLoginOTPUseCase) Execute(ctx context.Context, code string, userAgent string, ipAddress net.IP) (*LoginResult, error) {
+	// Hash code
+	hashCode := uc.loginOTPRepository.HashCode(code)
+
+	// Find login otp by code hash
+	loginOTP, err := uc.loginOTPRepository.FindByCode(ctx, hashCode)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrInvalidCredentials
+		}
+
 		return nil, err
 	}
 
@@ -37,6 +48,16 @@ func (uc *VerifyLoginOTPUseCase) Execute(ctx context.Context, code string) (*Log
 		return nil, err
 	}
 
+	// Find user by email
+	user, err := uc.userRepository.FindByEmail(ctx, loginOTP.Email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrInvalidCredentials
+		}
+
+		return nil, err
+	}
+
 	// Generate login token
-	return uc.loginUseCase.GenerateToken(ctx, 123, false)
+	return uc.loginUseCase.GenerateLoginToken(ctx, user, false, userAgent, ipAddress)
 }

@@ -13,7 +13,7 @@ run:
   tests: true
 
   # Use the Go version from the project's go.mod file.
-  go: '1.22'
+  go: '1.25'
 
 # Configuration for linters (code analysis tools).
 linters:
