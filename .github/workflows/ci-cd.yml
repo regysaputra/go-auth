@@ -8,7 +8,6 @@ on:
     branches: [ main ]
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
-  GO_CACHE_KEY: ${{ hashFiles('go.sum') }}
 jobs:
   build-and-push:
     # Run the job on a fresh Ubuntu server provided by GitHub
@@ -36,7 +35,7 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: go-${{ env.GO_CACHE_KEY }}
+          key: go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-
       - name: Download Go Modules
