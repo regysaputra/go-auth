@@ -10,21 +10,23 @@ import (
 	"net/http"
 )
 
+// TestHandler represents the HTTP handler for test-related operations.
 type TestHandler struct {
 	logger     *slog.Logger
 	geoService *service.GeoIPService
 }
 
+// NewTestHandler creates a new TestHandler instance.
 func NewTestHandler(logger *slog.Logger, geoService *service.GeoIPService) *TestHandler {
 	return &TestHandler{logger: logger, geoService: geoService}
 }
 
+// GetGeoLocation retrieves the geolocation information for the client's IP address.
 func (h *TestHandler) GetGeoLocation(w http.ResponseWriter, r *http.Request) {
 	ipAddress := helper.ExtractIP(r)
 
 	var newGeo domain.GeoInfo
 	if h.geoService != nil && ipAddress != nil {
-		//ip := net.ParseIP(ipAddress.String())
 		if net.ParseIP(ipAddress.String()) != nil {
 			geoLookup, err := h.geoService.Lookup(ipAddress)
 
@@ -33,17 +35,6 @@ func (h *TestHandler) GetGeoLocation(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
-	//fmt.Println("IP :", newGeo)
-	//fmt.Println("Country :", newGeo)
-	//fmt.Println("Region :", newGeo)
-	//fmt.Println("City :", newGeo)
-	//fmt.Println("Latitude :", newGeo)
-	//fmt.Println("Longitude :", newGeo)
-	//fmt.Println("ASN :", newGeo)
-	//fmt.Println("ASNorg :", newGeo)
-	//fmt.Println("ISP :", newGeo)
-	//fmt.Println("isVPN :", newGeo)
 
 	response.WriteSuccess(w, http.StatusOK, newGeo)
 }

@@ -12,11 +12,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// LoginUser represents the login user object
 type LoginUser struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
 
+// LoginResult represents the login result object
 type LoginResult struct {
 	LoginUserObj    *LoginUser
 	AccessToken     string
@@ -126,7 +128,7 @@ func (uc *LoginUserUseCase) GenerateLoginToken(ctx context.Context, user *domain
 		UserID:    user.ID,
 		TokenHash: refreshTokenHash,
 		UserAgent: userAgent,
-		IpAddress: ipAddress.String(),
+		IPAddress: ipAddress.String(),
 		CreatedAt: time.Now(),
 		Country:   &geo.Country,
 		Region:    &geo.Region,

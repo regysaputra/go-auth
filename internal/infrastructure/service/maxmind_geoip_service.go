@@ -9,11 +9,13 @@ import (
 	"github.com/oschwald/geoip2-golang"
 )
 
+// GeoIPService represents the geoip service object
 type GeoIPService struct {
 	cityDB *geoip2.Reader
 	asnDB  *geoip2.Reader
 }
 
+// NewGeoIPService creates a new geoip service object
 func NewGeoIPService(cityDBPath, asnDBPath string) (*GeoIPService, error) {
 	cityDB, err := geoip2.Open(cityDBPath)
 	if err != nil {
@@ -32,6 +34,7 @@ func NewGeoIPService(cityDBPath, asnDBPath string) (*GeoIPService, error) {
 	}, nil
 }
 
+// MustNewGeoIPService creates a new geoip service object or panics on error
 func MustNewGeoIPService(cityDBPath, asnDBPath string) *GeoIPService {
 	service, err := NewGeoIPService(cityDBPath, asnDBPath)
 	if err != nil {
@@ -41,6 +44,7 @@ func MustNewGeoIPService(cityDBPath, asnDBPath string) *GeoIPService {
 	return service
 }
 
+// Close closes the geoip databases
 func (s *GeoIPService) Close() error {
 	if s.cityDB == nil || s.asnDB == nil {
 		return errors.New("geoip databases not loaded")
@@ -262,10 +266,13 @@ func (s *GeoIPService) isVPN(asn *geoip2.ASN) bool {
 // Note: This is a basic implementation. For production, use Tor's official exit node list
 func (s *GeoIPService) isTor(ip net.IP) bool {
 	// In production, you should:
-	// 1. Download Tor exit node list from: https://check.torproject.org/exit-addresses
+	// 1. Download the Tor exit node list from: https://check.torproject.org/exit-addresses
 	// 2. Parse and store it in memory/Redis
 	// 3. Check if IP exists in that list
 
+	if ip == nil {
+		return false
+	}
 	// For now, return false (placeholder)
 	// You can implement this by maintaining a list of known Tor exit nodes
 	return false

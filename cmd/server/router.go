@@ -18,11 +18,11 @@ func (a *App) setupRouter(handler *Handler) chi.Router {
 	router.Use(chiMiddleware.Logger)
 	router.Use(chiMiddleware.Recoverer)
 
-	router.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+	router.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
 		response.WriteError(w, http.StatusNotFound, errors.New("method is not allowed"), a.logger)
 	})
 
-	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+	router.NotFound(func(w http.ResponseWriter, _ *http.Request) {
 		response.WriteError(w, http.StatusNotFound, errors.New("route doesn't exists"), a.logger)
 	})
 

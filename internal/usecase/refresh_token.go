@@ -146,7 +146,7 @@ func (uc *RefreshTokenUseCase) Execute(
 		TokenHash: newRefreshTokenHash,
 		ParentID:  &oldRefreshToken.ID,
 		UserAgent: userAgent,
-		IpAddress: ipAddress.String(),
+		IPAddress: ipAddress.String(),
 		CreatedAt: time.Now(),
 		ExpiresAt: oldRefreshToken.ExpiresAt,
 	}
@@ -213,7 +213,7 @@ func (uc *RefreshTokenUseCase) Execute(
 }
 
 // calculateRisk compute a simple risk score and reasons
-func (s *RefreshTokenUseCase) calculateRisk(oldRefreshToken *domain.RefreshToken, newGeo *domain.GeoInfo, userAgent string) (int, []string) {
+func (uc *RefreshTokenUseCase) calculateRisk(oldRefreshToken *domain.RefreshToken, newGeo *domain.GeoInfo, userAgent string) (int, []string) {
 	var score int
 	var reasons []string
 

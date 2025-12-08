@@ -29,6 +29,7 @@ func NewRequestPasswordResetUseCase(
 		logger:                       logger,
 		userRepository:               userRepository,
 		passwordResetTokenRepository: passwordResetTokenRepository,
+		tokenRepository:              tokenRepository,
 		taskDistributor:              taskDistributor,
 	}
 }
@@ -76,7 +77,7 @@ func (uc *RequestPasswordResetUseCase) Execute(ctx context.Context, email string
 	// Hash token
 	tokenHash := uc.tokenRepository.HashToken(token)
 
-	// Save hash token to database
+	// Save hash token to a database
 	err = uc.passwordResetTokenRepository.Save(ctx, user.ID, tokenHash)
 	if err != nil {
 		return err

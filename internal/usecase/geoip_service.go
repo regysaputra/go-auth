@@ -5,6 +5,7 @@ import (
 	"net"
 )
 
+// GeoIPService interface
 type GeoIPService interface {
 	Lookup(ip net.IP) (domain.GeoInfo, error)
 	IsVPN(ip net.IP) bool

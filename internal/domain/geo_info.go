@@ -1,5 +1,6 @@
 package domain
 
+// GeoInfo contains geographical information about an IP address
 type GeoInfo struct {
 	IP           string  `json:"ip"`
 	Country      string  `json:"country"`

@@ -103,7 +103,7 @@ func (uc *RegisterUserWithCodeUseCase) Execute(ctx context.Context, name string,
 		return nil, err
 	}
 
-	if exists == true {
+	if exists {
 		return nil, ErrEmailExists
 	}
 

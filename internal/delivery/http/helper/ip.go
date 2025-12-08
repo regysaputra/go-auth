@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// ExtractIP extracts the client IP from the request headers
 func ExtractIP(r *http.Request) net.IP {
 	// Cloudflare
 	if cf := r.Header.Get("CF-Connecting-IP"); cf != "" {
@@ -53,7 +54,6 @@ func ExtractIP(r *http.Request) net.IP {
 	return nil
 }
 
-// isPrivateIP checks if an IP is private/internal
 func isPrivateIP(ip net.IP) bool {
 	privateRanges := []string{
 		"10.0.0.0/8",

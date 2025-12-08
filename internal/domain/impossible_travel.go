@@ -18,6 +18,7 @@ type config struct {
 	Debug bool
 }
 
+// DefaultConfig is the default configuration.
 var DefaultConfig = config{
 	MaxSpeedKMH:   1000,
 	MinDistanceKM: 10.0,

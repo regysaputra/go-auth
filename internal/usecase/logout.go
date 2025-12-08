@@ -7,11 +7,13 @@ import (
 	"strings"
 )
 
+// LogoutUseCase represents the logout use case
 type LogoutUseCase struct {
 	refreshTokenRepository RefreshTokenRepository
 	tokenRepository        TokenRepository
 }
 
+// NewLogoutUseCase creates a new logout use case
 func NewLogoutUseCase(
 	refreshTokenRepository RefreshTokenRepository,
 	tokenRepository TokenRepository,
@@ -22,6 +24,7 @@ func NewLogoutUseCase(
 	}
 }
 
+// Execute performs the logout use case
 func (uc *LogoutUseCase) Execute(ctx context.Context, refreshToken string) error {
 	// Field validation
 	validationErrors := NewValidationErrors()

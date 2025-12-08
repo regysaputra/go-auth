@@ -3,7 +3,6 @@ package handler
 import (
 	"auth/internal/delivery/http/helper"
 	"auth/internal/delivery/http/response"
-	"auth/internal/infrastructure/service"
 	"auth/internal/usecase"
 	"encoding/json"
 	"errors"
@@ -12,6 +11,7 @@ import (
 	"time"
 )
 
+// Web string const
 const Web = "web"
 
 // AuthHandler represents the auth handler object
@@ -27,7 +27,6 @@ type AuthHandler struct {
 	requestLoginOTPUseCase         *usecase.RequestLoginOTPUseCase
 	verifyLoginOTPUseCase          *usecase.VerifyLoginOTPUseCase
 	logoutUseCase                  *usecase.LogoutUseCase
-	geoip                          *service.GeoIPService
 }
 
 // NewAuthHandler creates a new auth handler object
@@ -89,6 +88,7 @@ type RequestLoginOTPRequest struct {
 	Email string `json:"email"`
 }
 
+// LogoutRequest represent the request body for request logout
 type LogoutRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
@@ -364,7 +364,7 @@ func (h *AuthHandler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// RequestLoginOTP represent the request login otp handler
+// RequestLoginOTP handles the request to send a one-time password (OTP) to a user's email for login purposes.
 func (h *AuthHandler) RequestLoginOTP(w http.ResponseWriter, r *http.Request) {
 	var req RequestLoginOTPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -388,6 +388,7 @@ func (h *AuthHandler) RequestLoginOTP(w http.ResponseWriter, r *http.Request) {
 	response.WriteSuccess(w, http.StatusAccepted, map[string]string{"message": "a login otp has been sent to your email"})
 }
 
+// VerifyLoginOTP the handler for verifying a login otp and authenticating the user
 func (h *AuthHandler) VerifyLoginOTP(w http.ResponseWriter, r *http.Request) {
 	// Get code from a request body
 	var req VerifyCodeRequest
@@ -437,6 +438,7 @@ func (h *AuthHandler) VerifyLoginOTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Logout handles user logout by invalidating the provided refresh token and clearing the refresh token cookie.
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	var req LogoutRequest
 
