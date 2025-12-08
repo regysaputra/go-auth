@@ -62,8 +62,8 @@ COPY --from=builder /app/templates ./templates
 # Create geoip directory
 RUN mkdir -p pkg/geoip
 
-# Copy geoip database if they exists
-COPY --from=builder /app/pkg/geoip/*.mmdb ./pkg/geoip/ 2>/dev/null || true
+# Copy entire geoip directory (including any .mmdb files if they exist)
+COPY --from=builder /app/pkg/geoip ./pkg/geoip
 
 EXPOSE 8080
 
