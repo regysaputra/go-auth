@@ -83,6 +83,35 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:build-cache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:build-cache,mode=max
 
+      # Cache GeoIP database
+      - name: Cache GeoIP database
+        id: cache-geoip
+        uses: actions/cache@v4
+        with:
+          path: pkg/geoip/GeoLite2-City.mmdb
+          key: geoip-db-${{ hashFiles('setup-geoip.sh') }}
+          restore-keys: |
+            geoip-db-
+            
+      # Download GeoIP database if not cached
+      - name: Download GeoIP database
+        if: steps.cache-geoip.outputs.cache-hit != 'true'
+        env:
+          GEOIP_DOWNLOAD_URL: ${{ secrets.GEOIP_DOWNLOAD_URL }}
+        run: |
+          chmod +x setup-geoip.sh
+          ./setup-geoip.sh
+
+      # Verify GeoIP database exists
+      - name: Verify GeoIP database
+        run: |
+          if [ ! -f pkg/geoip/GeoLite2-City.mmdb ]; then
+            echo "❌ Error: GeoIP database not found!"
+            exit 1
+          fi
+          echo "✅ GeoIP database found:"
+          ls -lh pkg/geoip/GeoLite2-City.mmdb
+
       # ----- DEPLOY -----
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
