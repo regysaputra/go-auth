@@ -10,6 +10,9 @@ RUN go mod download
 # Copy the entire project
 COPY . .
 
+# Ensure geoip directory exists
+RUN mkdir -p pkg/geoip
+
 # Download and extract compressed GeoIP database during build
 ARG GEOIP_DOWNLOAD_URL
 ENV GEOIP_DOWNLOAD_URL=${GEOIP_DOWNLOAD_URL}
