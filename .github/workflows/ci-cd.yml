@@ -151,7 +151,7 @@ jobs:
             docker compose run --rm migrate || echo "Migration skipped or already applied"
             
             echo "🚀 Restarting the application container..."
-            docker compose up -d app
+            docker compose up -d api
             
             echo "Cleaning up old images..."
             docker image prune -f
