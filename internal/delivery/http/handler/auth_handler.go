@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const Web = "web"
+
 // AuthHandler represents the auth handler object
 type AuthHandler struct {
 	logger                         *slog.Logger
@@ -119,7 +121,7 @@ func (h *AuthHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	// Check client type
 	clientType := r.Header.Get("X-Client-Type")
 
-	if clientType == "web" || clientType == "" {
+	if clientType == Web || clientType == "" {
 		setRefreshCookie(w, result.RefreshToken, result.RefreshTokenExp)
 		response.WriteSuccess(w, http.StatusOK, map[string]any{
 			"user":         result.LoginUserObj,
@@ -181,7 +183,7 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// Check client type
 	clientType := r.Header.Get("X-Client-Type")
 
-	if clientType == "web" || clientType == "" {
+	if clientType == Web || clientType == "" {
 		setRefreshCookie(w, result.RefreshToken, result.RefreshTokenExp)
 		response.WriteSuccess(w, http.StatusOK, map[string]any{
 			"access_token": result.AccessToken,
@@ -225,7 +227,7 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	// Check client type
 	clientType := r.Header.Get("X-Client-Type")
 
-	if clientType == "web" || clientType == "" {
+	if clientType == Web || clientType == "" {
 		setRefreshCookie(w, result.RefreshToken, result.RefreshTokenExp)
 		response.WriteSuccess(w, http.StatusOK, map[string]any{
 			"user":         result.LoginUserObj,
@@ -417,7 +419,7 @@ func (h *AuthHandler) VerifyLoginOTP(w http.ResponseWriter, r *http.Request) {
 	// Check client type
 	clientType := r.Header.Get("X-Client-Type")
 
-	if clientType == "web" || clientType == "" {
+	if clientType == Web || clientType == "" {
 		setRefreshCookie(w, result.RefreshToken, result.RefreshTokenExp)
 		response.WriteSuccess(w, http.StatusOK, map[string]any{
 			"user":         result.LoginUserObj,
