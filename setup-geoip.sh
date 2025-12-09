@@ -3,6 +3,7 @@
 # GeoIP Database Setup Script
 # Downloads compressed GeoIP databases (.tar.gz) from cloud storage and extracts them
 # Supports multiple database files: GeoLite2-City.mmdb and GeoLite2-ASN.mmdb
+# Handles Google Drive large file downloads with virus scan warning
 # CI/CD friendly with non-interactive mode
 
 set -e  # Exit on error
@@ -127,6 +128,72 @@ check_existing_files() {
     fi
 }
 
+# Download file with Google Drive support
+download_file() {
+    local url="$1"
+    local output="$2"
+
+    # Check if it's a Google Drive URL
+    if [[ "$url" =~ drive\.google\.com ]]; then
+        log_info "Detected Google Drive URL, using special handling for large files..."
+
+        # Extract file ID from URL
+        FILE_ID=$(echo "$url" | grep -oP '(?<=id=)[^&]+' || echo "$url" | grep -oP '(?<=/d/)[^/]+')
+
+        if [ -z "$FILE_ID" ]; then
+            log_error "Could not extract Google Drive file ID from URL"
+            return 1
+        fi
+
+        log_info "Google Drive File ID: $FILE_ID"
+
+        # First attempt - direct download
+        if command -v curl &> /dev/null; then
+            curl -L "https://drive.google.com/uc?export=download&id=$FILE_ID" -o "$output" 2>&1
+        elif command -v wget &> /dev/null; then
+            wget --quiet "https://drive.google.com/uc?export=download&id=$FILE_ID" -O "$output" 2>&1
+        fi
+
+        # Check if we got the virus scan warning page
+        if [ -f "$output" ]; then
+            FILE_SIZE=$(stat -f%z "$output" 2>/dev/null || stat -c%s "$output" 2>/dev/null)
+            if [ "$FILE_SIZE" -lt 100000 ] && grep -q "virus scan warning" "$output" 2>/dev/null; then
+                log_warn "Google Drive virus scan warning detected, attempting bypass..."
+
+                # Extract confirm token
+                CONFIRM=$(cat "$output" | grep -oP 'confirm=([^&"]+)' | head -1 | cut -d= -f2)
+
+                if [ -n "$CONFIRM" ]; then
+                    log_info "Using confirmation token: $CONFIRM"
+                    if command -v curl &> /dev/null; then
+                        curl -L "https://drive.google.com/uc?export=download&id=$FILE_ID&confirm=$CONFIRM" -o "$output" 2>&1
+                    elif command -v wget &> /dev/null; then
+                        wget --quiet "https://drive.google.com/uc?export=download&id=$FILE_ID&confirm=$CONFIRM" -O "$output" 2>&1
+                    fi
+                fi
+            fi
+        fi
+    else
+        # Regular download for non-Google Drive URLs
+        if command -v curl &> /dev/null; then
+            if [ "$CI_MODE" = "true" ]; then
+                curl -fsSL "$url" -o "$output"
+            else
+                curl -L --progress-bar "$url" -o "$output"
+            fi
+        elif command -v wget &> /dev/null; then
+            if [ "$CI_MODE" = "true" ]; then
+                wget -q "$url" -O "$output"
+            else
+                wget --show-progress "$url" -O "$output"
+            fi
+        else
+            log_error "Neither curl nor wget is installed."
+            return 1
+        fi
+    fi
+}
+
 # Download and extract the files
 download_and_extract() {
     log_info "Downloading compressed GeoIP databases..."
@@ -137,21 +204,9 @@ download_and_extract() {
 
     # Download the compressed file
     log_info "Downloading .tar.gz archive..."
-    if command -v curl &> /dev/null; then
-        if [ "$CI_MODE" = "true" ]; then
-            curl -fsSL "$DOWNLOAD_URL" -o "$temp_file"
-        else
-            curl -L --progress-bar "$DOWNLOAD_URL" -o "$temp_file"
-        fi
-    elif command -v wget &> /dev/null; then
-        if [ "$CI_MODE" = "true" ]; then
-            wget -q "$DOWNLOAD_URL" -O "$temp_file"
-        else
-            wget --show-progress "$DOWNLOAD_URL" -O "$temp_file"
-        fi
-    else
-        log_error "Neither curl nor wget is installed."
-        log_error "Please install curl or wget to download the databases."
+
+    if ! download_file "$DOWNLOAD_URL" "$temp_file"; then
+        log_error "Download failed"
         rm -rf "$temp_dir"
         exit 1
     fi
@@ -169,6 +224,8 @@ download_and_extract() {
     if [ "$archive_size" -lt 100000 ]; then
         log_error "Downloaded file is too small (${archive_size} bytes)"
         log_error "This might be an error page or invalid file."
+        log_info "First 500 bytes of downloaded file:"
+        head -c 500 "$temp_file" | cat -v
         rm -rf "$temp_dir"
         exit 1
     fi
