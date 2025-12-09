@@ -26,11 +26,6 @@ clean:
 	@echo "Cleaning up..."
 	@rm -f my-api
 
-# Generates Swagger documentation
-swag:
-	@echo "Generating Swagger docs..."
-	@swag init
-
 migrate-create:
 	@echo "Create migration file..."
 	@migrate create -ext sql -dir internal/infrastructure/db/migrations -seq $(args)
