@@ -4,3 +4,7 @@ oci-private.key
 oci-public.key.pub
 .idea
 pkg/
+vendor/
+*.exe
+.vscode/
+*.test
