@@ -10,21 +10,6 @@ RUN go mod download
 # Copy the entire project
 COPY . .
 
-# Ensure geoip directory exists
-RUN mkdir -p pkg/geoip
-
-# Download and extract compressed GeoIP database during build
-ARG GEOIP_DOWNLOAD_URL
-ENV GEOIP_DOWNLOAD_URL=${GEOIP_DOWNLOAD_URL}
-
-RUN if [ -n "$GEOIP_DOWNLOAD_URL" ]; then \
-        echo "Downloading and extracting GeoIP databases..."; \
-        chmod +x setup-geoip.sh && \
-        ./setup-geoip.sh; \
-    else \
-        echo "WARNING: GEOIP_DOWNLOAD_URL not set, skipping GeoIP download"; \
-    fi
-
 # Verify the database files exist
 RUN echo "Checking for GeoIP databases..."; \
     if [ -f pkg/geoip/GeoLite2-City.mmdb ]; then \
@@ -59,11 +44,8 @@ COPY --from=builder /app/public ./public
 # Copy templates directory
 COPY --from=builder /app/templates ./templates
 
-# Create geoip directory
-RUN mkdir -p pkg/geoip
-
 # Copy entire geoip directory (including any .mmdb files if they exist)
-COPY --from=builder /app/pkg/geoip ./pkg/geoip
+COPY --from=builder /app/pkg ./pkg
 
 EXPOSE 8080
 

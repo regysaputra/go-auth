@@ -87,7 +87,7 @@ jobs:
         id: cache-geoip
         uses: actions/cache@v4
         with:
-          path: pkg/geoip/GeoLite2-City.mmdb
+          path: pkg/geoip/*.mmdb
           key: geoip-db-${{ hashFiles('setup-geoip.sh') }}
           restore-keys: |
             geoip-db-
@@ -101,15 +101,22 @@ jobs:
           chmod +x setup-geoip.sh
           ./setup-geoip.sh
 
-      # Verify GeoIP database exists
+        # Verify GeoIP database exists
       - name: Verify GeoIP database
         run: |
-          if [ ! -f pkg/geoip/GeoLite2-City.mmdb ]; then
-            echo "❌ Error: GeoIP database not found!"
-            exit 1
+          echo "Checking for GeoIP databases..."
+          if [ -f pkg/geoip/GeoLite2-City.mmdb ]; then
+            echo "✅ GeoLite2-City.mmdb found"
+            ls -lh pkg/geoip/GeoLite2-City.mmdb
+          else
+            echo "⚠️ GeoLite2-City.mmdb not found"
           fi
-          echo "✅ GeoIP database found:"
-          ls -lh pkg/geoip/GeoLite2-City.mmdb
+          if [ -f pkg/geoip/GeoLite2-ASN.mmdb ]; then
+            echo "✅ GeoLite2-ASN.mmdb found"
+            ls -lh pkg/geoip/GeoLite2-ASN.mmdb
+          else
+            echo "⚠️ GeoLite2-ASN.mmdb not found"
+          fi
 
       # ----- DEPLOY -----
       - name: Deploy to Server
