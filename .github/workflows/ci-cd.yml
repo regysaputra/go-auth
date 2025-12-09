@@ -1,13 +1,15 @@
 name: CI/CD Pipeline
 
-# Trigger the workflow on every to main branch
+# Trigger the workflow on every push to main branch
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
+
 jobs:
   build-and-push:
     # Run the job on a fresh Ubuntu server provided by GitHub
@@ -38,6 +40,45 @@ jobs:
           key: go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-
+
+      # ===== DOWNLOAD GEOIP DATABASES BEFORE EVERYTHING ELSE =====
+      # Cache GeoIP database
+      - name: Cache GeoIP database
+        id: cache-geoip
+        uses: actions/cache@v4
+        with:
+          path: pkg/geoip/*.mmdb
+          key: geoip-db-${{ hashFiles('setup-geoip.sh') }}
+          restore-keys: |
+            geoip-db-
+
+      # Download GeoIP database if not cached
+      - name: Download GeoIP database
+        if: steps.cache-geoip.outputs.cache-hit != 'true'
+        env:
+          GEOIP_DOWNLOAD_URL: ${{ secrets.GEOIP_DOWNLOAD_URL }}
+        run: |
+          chmod +x setup-geoip.sh
+          ./setup-geoip.sh
+
+      # Verify GeoIP database exists
+      - name: Verify GeoIP database
+        run: |
+          echo "Checking for GeoIP databases..."
+          if [ -f pkg/geoip/GeoLite2-City.mmdb ]; then
+            echo "✅ GeoLite2-City.mmdb found"
+            ls -lh pkg/geoip/GeoLite2-City.mmdb
+          else
+            echo "⚠️ GeoLite2-City.mmdb not found"
+          fi
+          if [ -f pkg/geoip/GeoLite2-ASN.mmdb ]; then
+            echo "✅ GeoLite2-ASN.mmdb found"
+            ls -lh pkg/geoip/GeoLite2-ASN.mmdb
+          else
+            echo "⚠️ GeoLite2-ASN.mmdb not found"
+          fi
+      # ============================================================
+
       - name: Download Go Modules
         run: go mod download
 
@@ -82,42 +123,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:build-cache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:build-cache,mode=max
 
-      # Cache GeoIP database
-      - name: Cache GeoIP database
-        id: cache-geoip
-        uses: actions/cache@v4
-        with:
-          path: pkg/geoip/*.mmdb
-          key: geoip-db-${{ hashFiles('setup-geoip.sh') }}
-          restore-keys: |
-            geoip-db-
-            
-      # Download GeoIP database if not cached
-      - name: Download GeoIP database
-        if: steps.cache-geoip.outputs.cache-hit != 'true'
-        env:
-          GEOIP_DOWNLOAD_URL: ${{ secrets.GEOIP_DOWNLOAD_URL }}
-        run: |
-          chmod +x setup-geoip.sh
-          ./setup-geoip.sh
-
-        # Verify GeoIP database exists
-      - name: Verify GeoIP database
-        run: |
-          echo "Checking for GeoIP databases..."
-          if [ -f pkg/geoip/GeoLite2-City.mmdb ]; then
-            echo "✅ GeoLite2-City.mmdb found"
-            ls -lh pkg/geoip/GeoLite2-City.mmdb
-          else
-            echo "⚠️ GeoLite2-City.mmdb not found"
-          fi
-          if [ -f pkg/geoip/GeoLite2-ASN.mmdb ]; then
-            echo "✅ GeoLite2-ASN.mmdb found"
-            ls -lh pkg/geoip/GeoLite2-ASN.mmdb
-          else
-            echo "⚠️ GeoLite2-ASN.mmdb not found"
-          fi
-
       # ----- DEPLOY -----
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
@@ -125,21 +130,21 @@ jobs:
           timeout: 180s
           host: ${{ secrets.SERVER_HOST }}     # e.g., '123.45.67.89'
           username: ${{ secrets.SERVER_USER }} # e.g., 'ubuntu'
-          key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # Your server's private SSH key
           script: |
             set -ex
             cd go-auth
             
-            echo "🔄 Resetting local changes..."
+            echo "📄 Resetting local changes..."
             git reset --hard HEAD
             
-            echo "🔄 Pulling latest configuration..."
+            echo "📄 Pulling latest configuration..."
             git pull origin main
             
             echo "🔐 Logging in to GHCR..."
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            echo "Setting up environment variable ..."
+            echo "Setting up environment variables..."
             export PORT=8080
             export SECRET_KEY=${{ secrets.SECRET_KEY }}
             export DATABASE_URL=${{ secrets.DATABASE_URL }}
@@ -160,5 +165,5 @@ jobs:
             echo "🚀 Restarting the application container..."
             docker compose up -d api
             
-            echo "Cleaning up old images..."
+            echo "🧹 Cleaning up old images..."
             docker image prune -f
