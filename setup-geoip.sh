@@ -128,7 +128,7 @@ check_existing_files() {
     fi
 }
 
-# Download file with Google Drive support
+# Download file with Google Drive and Dropbox support
 download_file() {
     local url="$1"
     local output="$2"
@@ -173,8 +173,44 @@ download_file() {
                 fi
             fi
         fi
+    elif [[ "$url" =~ dropbox\.com ]]; then
+        log_info "Detected Dropbox URL, ensuring direct download..."
+
+        # Ensure dl=1 parameter is set
+        local download_url="$url"
+        if [[ ! "$url" =~ dl=1 ]]; then
+            log_warn "URL doesn't have dl=1, attempting to add it..."
+            download_url="${url//dl=0/dl=1}"
+            if [[ ! "$download_url" =~ dl= ]]; then
+                if [[ "$download_url" =~ \? ]]; then
+                    download_url="${download_url}&dl=1"
+                else
+                    download_url="${download_url}?dl=1"
+                fi
+            fi
+        fi
+
+        log_info "Using URL: ${download_url:0:50}..."
+
+        # Download with redirect following
+        if command -v curl &> /dev/null; then
+            if [ "$CI_MODE" = "true" ]; then
+                curl -fsSL "$download_url" -o "$output"
+            else
+                curl -L --progress-bar "$download_url" -o "$output"
+            fi
+        elif command -v wget &> /dev/null; then
+            if [ "$CI_MODE" = "true" ]; then
+                wget -q "$download_url" -O "$output"
+            else
+                wget --show-progress "$download_url" -O "$output"
+            fi
+        else
+            log_error "Neither curl nor wget is installed."
+            return 1
+        fi
     else
-        # Regular download for non-Google Drive URLs
+        # Regular download for other URLs
         if command -v curl &> /dev/null; then
             if [ "$CI_MODE" = "true" ]; then
                 curl -fsSL "$url" -o "$output"
