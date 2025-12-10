@@ -30,6 +30,42 @@ jobs:
         with:
           go-version: stable
 
+      # ===== DOWNLOAD GEOIP FIRST (BEFORE EVERYTHING) =====
+      - name: Cache GeoIP database
+        id: cache-geoip
+        uses: actions/cache@v4
+        with:
+          path: pkg/geoip/*.mmdb
+          key: geoip-db-${{ hashFiles('setup-geoip.sh') }}
+          restore-keys: |
+            geoip-db-
+
+      - name: Download GeoIP database
+        if: steps.cache-geoip.outputs.cache-hit != 'true'
+        env:
+          GEOIP_DOWNLOAD_URL: ${{ secrets.GEOIP_DOWNLOAD_URL }}
+        run: |
+          chmod +x setup-geoip.sh
+          ./setup-geoip.sh
+
+      - name: Verify GeoIP database
+        run: |
+          echo "Checking for GeoIP databases..."
+          if [ -f pkg/geoip/GeoLite2-City.mmdb ]; then
+            echo "✅ GeoLite2-City.mmdb found"
+            ls -lh pkg/geoip/GeoLite2-City.mmdb
+          else
+            echo "❌ GeoLite2-City.mmdb not found"
+            exit 1
+          fi
+          if [ -f pkg/geoip/GeoLite2-ASN.mmdb ]; then
+            echo "✅ GeoLite2-ASN.mmdb found"
+            ls -lh pkg/geoip/GeoLite2-ASN.mmdb
+          else
+            echo "⚠️ GeoLite2-ASN.mmdb not found (optional)"
+          fi
+      # ====================================================
+
       # Cache Go modules
       - name: Cache Go Modules
         uses: actions/cache@v4
@@ -40,44 +76,6 @@ jobs:
           key: go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             go-
-
-      # ===== DOWNLOAD GEOIP DATABASES BEFORE EVERYTHING ELSE =====
-      # Cache GeoIP database
-      - name: Cache GeoIP database
-        id: cache-geoip
-        uses: actions/cache@v4
-        with:
-          path: pkg/geoip/*.mmdb
-          key: geoip-db-${{ hashFiles('setup-geoip.sh') }}
-          restore-keys: |
-            geoip-db-
-
-      # Download GeoIP database if not cached
-      - name: Download GeoIP database
-        if: steps.cache-geoip.outputs.cache-hit != 'true'
-        env:
-          GEOIP_DOWNLOAD_URL: ${{ secrets.GEOIP_DOWNLOAD_URL }}
-        run: |
-          chmod +x setup-geoip.sh
-          ./setup-geoip.sh
-
-      # Verify GeoIP database exists
-      - name: Verify GeoIP database
-        run: |
-          echo "Checking for GeoIP databases..."
-          if [ -f pkg/geoip/GeoLite2-City.mmdb ]; then
-            echo "✅ GeoLite2-City.mmdb found"
-            ls -lh pkg/geoip/GeoLite2-City.mmdb
-          else
-            echo "⚠️ GeoLite2-City.mmdb not found"
-          fi
-          if [ -f pkg/geoip/GeoLite2-ASN.mmdb ]; then
-            echo "✅ GeoLite2-ASN.mmdb found"
-            ls -lh pkg/geoip/GeoLite2-ASN.mmdb
-          else
-            echo "⚠️ GeoLite2-ASN.mmdb not found"
-          fi
-      # ============================================================
 
       - name: Download Go Modules
         run: go mod download

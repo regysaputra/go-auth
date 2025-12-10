@@ -1,18 +1,19 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
+# Install git for go modules
 RUN apk add --no-cache git ca-certificates
 
 # Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the entire project
+# Copy the entire project (including pre-downloaded GeoIP databases from host)
 COPY . .
 
-# Verify the database files exist
+# Verify the database files exist (for logging only, non-critical)
 RUN echo "Checking for GeoIP databases..."; \
     if [ -f pkg/geoip/GeoLite2-City.mmdb ]; then \
         echo "✓ GeoLite2-City.mmdb found"; \
@@ -25,7 +26,7 @@ RUN echo "Checking for GeoIP databases..."; \
         ls -lh pkg/geoip/GeoLite2-ASN.mmdb; \
     else \
         echo "⚠ GeoLite2-ASN.mmdb not found"; \
-    fi
+    fi || true
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -a -installsuffix cgo -o main ./cmd/server
@@ -46,7 +47,7 @@ COPY --from=builder /app/public ./public
 # Copy templates directory
 COPY --from=builder /app/templates ./templates
 
-# Copy entire geoip directory (including any .mmdb files if they exist)
+# Copy entire pkg directory (includes GeoIP databases)
 COPY --from=builder /app/pkg ./pkg
 
 EXPOSE 8080
