@@ -51,6 +51,7 @@ func main() {
 	}
 	defer app.Cleanup()
 
+	// Start server
 	if err := app.Start(); err != nil {
 		slogger.Error("Failed to start server", "error", err)
 		os.Exit(1)
