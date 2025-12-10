@@ -13,3 +13,8 @@ tmp/
 *.key
 *.key.pub
 vendor
+--best
+-9
+archive.tar
+archive.tar.br
+geo.tar.gz
