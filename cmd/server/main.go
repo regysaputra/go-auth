@@ -43,6 +43,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize application
 	app, err := NewApp(config, slogger)
 	if err != nil {
 		slogger.Error("Failed to initialize app", "error", err)
