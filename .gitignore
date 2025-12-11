@@ -8,3 +8,7 @@ vendor/
 *.exe
 .vscode/
 *.test
+migrate.sh
+server
+setup-geoip.sh
+cleanup-dev.sh
