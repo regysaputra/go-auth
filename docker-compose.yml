@@ -18,6 +18,8 @@ services:
     depends_on:
       - db
       - redis
+    networks:
+      - app-network
     restart: always
 
   redis:
@@ -30,6 +32,8 @@ services:
     restart: always
     entrypoint: [ "/usr/local/bin/redis-server" ]
     command: [ "--appendonly", "yes" ]
+    networks:
+      - app-network
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -46,6 +50,8 @@ services:
       POSTGRES_DB: auth
     volumes:
       - pg-data:/var/lib/postgresql/data
+    networks:
+      - app-network
     ports:
       - "5433:5432"
 
@@ -59,6 +65,8 @@ services:
       "-database", "postgres://regy:123@db:5432/auth?sslmode=disable",
       "up"
     ]
+    networks:
+      - app-network
     depends_on:
       - db
 
@@ -96,3 +104,7 @@ services:
 volumes:
   pg-data:
   redis-data:
+
+networks:
+  app-network:
+    driver: bridge
