@@ -159,6 +159,9 @@ jobs:
             echo "🚀 Starting application..."
             docker compose up -d app
             
+            echo "Running nginx reverse proxy..."
+            docker compose up -d nginx
+            
             echo "⚙️ Running database migrations..."
             # ✅ Ensures migrate binary is called correctly
             docker compose run --rm migrate || echo "Migration skipped or already applied"
