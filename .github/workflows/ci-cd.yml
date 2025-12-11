@@ -78,6 +78,15 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
           script: |
             set -ex
+            # if repo missing or not a git repo, clone a fresh copy
+            if [ ! -d "go-auth/.git" ]; then
+              echo "Repository not found or not a git repo — cloning fresh copy..."
+              rm -rf go-auth
+              # If your repo is public:
+              git clone https://github.com/regysaputra/go-auth.git
+              # If private, use a token (ensure TOKEN_GITHUB is set as secret)
+              # git clone https://$GITHUB_ACTOR:$TOKEN_GITHUB@github.com/regysaputra/go-auth.git
+            fi
             cd go-auth
             
             echo "🔄 Resetting local changes..."
