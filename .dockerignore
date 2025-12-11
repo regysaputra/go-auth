@@ -1,20 +1,42 @@
-.env
-.env.*
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go build cache & artifacts
+/build/
+coverage.out
+
+# Vendor (if you use go mod vendor)
+vendor/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
 .git
 .gitignore
-*.md
-docker-compose*.yml
-Dockerfile*
-.vscode
-.idea
+
+# Config & environment
+.env
+.env.*
+*.yaml
+*.yml
+*.toml
+*.json
+
+# Logs
 *.log
-tmp/
-*.tmp
-*.key
-*.key.pub
-vendor
---best
--9
-archive.tar
-archive.tar.br
-geo.tar.gz
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+Dockerfile.dev
+docker-compose.dev.yml

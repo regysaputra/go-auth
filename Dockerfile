@@ -1,55 +1,49 @@
-# Build stage
+# ---------- builder ----------
 FROM golang:1.25-alpine AS builder
+WORKDIR /src
 
-WORKDIR /app
+# Install git (if needed for `go get`), ca-certificates for go http clients when building (not strictly necessary here)
+RUN apk add --no-cache git
 
-# Install git for go modules
-RUN apk add --no-cache git ca-certificates
-
-# Copy go mod files
+# Use module cache
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the entire project (including pre-downloaded GeoIP databases from host)
+# Copy source
 COPY . .
 
-# Verify the database files exist (for logging only, non-critical)
-RUN echo "Checking for GeoIP databases..."; \
-    if [ -f pkg/geoip/GeoLite2-City.mmdb ]; then \
-        echo "✓ GeoLite2-City.mmdb found"; \
-        ls -lh pkg/geoip/GeoLite2-City.mmdb; \
-    else \
-        echo "⚠ GeoLite2-City.mmdb not found"; \
-    fi; \
-    if [ -f pkg/geoip/GeoLite2-ASN.mmdb ]; then \
-        echo "✓ GeoLite2-ASN.mmdb found"; \
-        ls -lh pkg/geoip/GeoLite2-ASN.mmdb; \
-    else \
-        echo "⚠ GeoLite2-ASN.mmdb not found"; \
-    fi || true
+# Build the server binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -trimpath -ldflags="-s -w" -o /out/main ./cmd/server
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -a -installsuffix cgo -o main ./cmd/server
+# Build the migrate binary (if you have a cmd/migrate)
+RUN if [ -d "./cmd/migrate" ]; then \
+      CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate; \
+    fi
 
-# Final stage
-FROM alpine:latest
+# ---------- runtime ----------
+FROM alpine:3.19
+# Install required system dependencies (certs, timezone if needed) and drop caches
+RUN apk add --no-cache ca-certificates tzdata \
+  && update-ca-certificates || true
 
-RUN apk --no-cache add ca-certificates
+# Create non-root user
+RUN adduser -D -g '' appuser
 
 WORKDIR /app
 
-# Copy the binary from builder
-COPY --from=builder /app/main .
+# Copy binaries from builder
+COPY --from=builder /out/main ./main
+COPY --from=builder /out/migrate ./migrate
 
-# Copy the public directory with openapi.yml
-COPY --from=builder /app/public ./public
+# Ensure proper ownership
+RUN chown appuser:appuser /app/main /app/migrate || true
+USER appuser
 
-# Copy templates directory
-COPY --from=builder /app/templates ./templates
-
-# Copy entire pkg directory (includes GeoIP databases)
-COPY --from=builder /app/pkg ./pkg
+# Mountpoint for optional data (GeoIP). The app expects files under /app/pkg/geoip
+VOLUME ["/app/pkg/geoip"]
 
 EXPOSE 8080
 
+# Default command (run main). Use `docker-compose` override if needed.
 CMD ["./main"]

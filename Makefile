@@ -72,7 +72,7 @@ docker-destroy:
 
 psql:
 	@echo "Connect to postgresql..."
-	@psql postgresql://regy:123@localhost:5433/auth
+	@docker exec -it db psql -U regy -d auth
 
 ssh:
 	@ssh -i oci-private.key ubuntu@161.118.206.173
