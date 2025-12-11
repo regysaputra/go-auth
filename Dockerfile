@@ -16,7 +16,7 @@ COPY . .
 # Build the application.
 # We build a statically linked binary to keep the final image small and self-contained.
 # The 'templates' are already embedded, so we don't need to copy them.
-RUN CGO_ENLED=1 GOOS=linux go build -ldflags '-w -s' -o /app/server ./cmd/server/main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags '-w -s' -o /app/server ./cmd/server
 
 # --- Final Stage ---
 # We use a minimal Alpine image for a tiny, secure final container.
