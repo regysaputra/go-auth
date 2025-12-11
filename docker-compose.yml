@@ -58,7 +58,7 @@ services:
   migrate:
     image: migrate/migrate
     volumes:
-      - ./db/migrations:/migrations
+      - ./internal/infrastructure/db/migrations:/migrations
     entrypoint: ["/usr/local/bin/migrate"]
     command: [
       "-path", "/migrations",
@@ -72,7 +72,7 @@ services:
 
   nginx:
     image: nginx:alpine  # Alpine version is smaller
-    container_name: nginx-dev
+    container_name: nginx
     ports:
       - "80:80"      # HTTP
       - "443:443"    # HTTPS (for future use)
