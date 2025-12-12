@@ -23,7 +23,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build -ldflags '-w -s' -o /app/server ./cmd/serv
 FROM alpine:latest
 
 # Add SSL certificates
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates curl
 
 # Copy the built application binary from the builder stage.
 COPY --from=builder /app/server /app/server
