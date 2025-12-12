@@ -115,7 +115,8 @@ jobs:
             echo "⬇️ Pulling latest image..."
             docker pull ${{ env.IMAGE_NAME }}:latest
             
-            cat > .env <<EOF PORT=${PORT} SECRET_KEY=${SECRET_KEY} DATABASE_URL=${DATABASE_URL} SMTP_HOST=${SMTP_HOST} SMTP_PORT=${SMTP_PORT} SMTP_USERNAME=${SMTP_USERNAME} SMTP_PASSWORD=${SMTP_PASSWORD} SMTP_FROM=${SMTP_FROM} BASE_URL=${BASE_URL} REDIS_URL=${REDIS_URL} EOF
+            echo "Setting up environment variable ..." 
+            echo -e "PORT=${{ secrets.PORT }}\nSECRET_KEY=${{ secrets.SECRET_KEY }}\nDATABASE_URL=${{ secrets.DATABASE_URL }}\nSMTP_HOST=${{ secrets.SMTP_HOST }}\nSMTP_PORT=${{ secrets.SMTP_PORT }}\nSMTP_USERNAME=${{ secrets.SMTP_USERNAME }}\nSMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}\nSMTP_FROM=${{ secrets.SMTP_FROM }}\nBASE_URL=${{ secrets.BASE_URL }}\nREDIS_URL=${{ secrets.REDIS_URL }}" > .env
             
             echo "🧹 Stopping old containers..."
             docker compose down
