@@ -21,8 +21,8 @@ services:
     networks:
       - app-network
     volumes:
-      - ./pkg/geoip:/app/pkg/geoip:ro
-      - ./templates:/app/templates:ro
+      - ./pkg/geoip:/pkg/geoip:ro
+      - ./templates:/templates:ro
     restart: always
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
