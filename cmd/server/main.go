@@ -35,6 +35,7 @@ const (
 )
 
 func main() {
+	// Initialize logger
 	slogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	config, err := loadConfig()
