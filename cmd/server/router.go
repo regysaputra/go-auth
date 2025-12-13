@@ -66,6 +66,7 @@ func setupAPIRoutes(router chi.Router, handler *Handler) {
 
 		// Utilities / test routes
 		api.Get("/geo", handler.test.GetGeoLocation)
+		api.Get("/header", handler.test.GetHeader)
 
 		// Auth routes
 		authRoutes(api, handler)

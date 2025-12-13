@@ -21,6 +21,12 @@ func NewTestHandler(logger *slog.Logger, geoService *service.GeoIPService) *Test
 	return &TestHandler{logger: logger, geoService: geoService}
 }
 
+func (h *TestHandler) GetHeader(w http.ResponseWriter, r *http.Request) {
+	for k, v := range r.Header {
+		w.Write([]byte(k + ": " + v[0] + "\n"))
+	}
+}
+
 // GetGeoLocation retrieves the geolocation information for the client's IP address.
 func (h *TestHandler) GetGeoLocation(w http.ResponseWriter, r *http.Request) {
 	ipAddress := helper.ExtractIP(r)
