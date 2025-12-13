@@ -93,6 +93,8 @@ services:
 #      - ./static:/usr/share/nginx/html:ro
 #      - ./nginx/certs/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
 #      - ./nginx/certs/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+    networks:
+      - app-network
     restart: unless-stopped
     depends_on:
       - app
