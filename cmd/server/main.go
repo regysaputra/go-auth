@@ -44,6 +44,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	slogger.Info("Loaded config", "config", config)
+
 	// Initialize application
 	app, err := NewApp(config, slogger)
 	if err != nil {
