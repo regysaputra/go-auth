@@ -114,12 +114,14 @@ jobs:
             else
               echo "./nginx/certs does not exixts. Create SSL directory"
               mkdir -p nginx/certs
+            fi
             
             if [ -d "./nginx/certbot-webroot" ] then
               echo "./nginx/certbot-webroot is exixts"
             else
               echo "./nginx/certbot-webroot does not exixts. Create SSL directory"
               mkdir -p nginx/certbot-webroot
+            fi
             
             echo "🔐 Logging in to GHCR..."
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
