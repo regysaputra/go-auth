@@ -109,14 +109,14 @@ jobs:
               echo "✔️ GeoIP database already exists — skipping download."
             fi
             
-            if [ -d "./nginx/certs" ] then
+            if [ -d "./nginx/certs" ]; then
               echo "./nginx/certs is exixts"
             else
               echo "./nginx/certs does not exixts. Create SSL directory"
               mkdir -p nginx/certs
             fi
             
-            if [ -d "./nginx/certbot-webroot" ] then
+            if [ -d "./nginx/certbot-webroot" ]; then
               echo "./nginx/certbot-webroot is exixts"
             else
               echo "./nginx/certbot-webroot does not exixts. Create SSL directory"
