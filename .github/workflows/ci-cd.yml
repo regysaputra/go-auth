@@ -72,7 +72,7 @@ jobs:
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
         with:
-          timeout: 500s
+          timeout: 1000s
           host: ${{ secrets.SERVER_HOST }}     # e.g., '123.45.67.89'
           username: ${{ secrets.SERVER_USER }} # e.g., 'ubuntu'
           key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
