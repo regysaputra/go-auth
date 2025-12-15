@@ -12,3 +12,4 @@ migrate.sh
 server
 setup-geoip.sh
 cleanup-dev.sh
+nginx/certs/

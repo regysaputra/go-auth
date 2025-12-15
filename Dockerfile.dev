@@ -1,17 +1,36 @@
-FROM golang:1.25-alpine
+# Dockerfile.dev - Development Dockerfile with Air hot reload
 
-WORKDIR /app
+FROM golang:1.25-alpine AS development
 
-# Install tools
-RUN apk add --no-cache git ca-certificates tzdata
+# Install necessary tools
+RUN apk add --no-cache \
+    git \
+    curl \
+    make \
+    bash
+
+# Install Air for hot reload
 RUN go install github.com/air-verse/air@latest
 
-# Copy only dependency files (for caching)
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files first (for better caching)
 COPY go.mod go.sum ./
+
+# Download dependencies
 RUN go mod download
 
-# Don't copy source - will be mounted via volume
+# Copy the entire source code
+# Note: In docker-compose.dev.yml, we mount the source code as a volume
+# This COPY is for initial setup and when building the image
+COPY . .
 
+# Create tmp directory for Air build artifacts
+RUN mkdir -p tmp
+
+# Expose application port
 EXPOSE 8080
 
+# Run Air for hot reload
 CMD ["air", "-c", ".air.toml"]

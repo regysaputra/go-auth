@@ -109,6 +109,18 @@ jobs:
               echo "✔️ GeoIP database already exists — skipping download."
             fi
             
+            if [ -d "./nginx/certs" ] then
+              echo "./nginx/certs is exixts"
+            else
+              echo "./nginx/certs does not exixts. Create SSL directory"
+              mkdir -p nginx/certs
+            
+            if [ -d "./nginx/certbot-webroot" ] then
+              echo "./nginx/certbot-webroot is exixts"
+            else
+              echo "./nginx/certbot-webroot does not exixts. Create SSL directory"
+              mkdir -p nginx/certbot-webroot
+            
             echo "🔐 Logging in to GHCR..."
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
@@ -153,6 +165,41 @@ jobs:
             echo "Running nginx reverse proxy..."
             docker compose up -d nginx
             
+            # Check if SSL certificate exists
+            echo "🔍 Checking SSL certificate status..."
+            if [ ! -d "./nginx/certs/live/${{ secrets.DOMAIN_NAME }}" ]; then
+              echo "🔒 SSL certificate not found. Obtaining from Let's Encrypt..."
+            
+              # Wait for nginx to be fully ready
+              sleep 3
+            
+              # Obtain SSL certificate
+              docker compose run --rm certbot certonly \
+                --webroot \
+                --webroot-path=/var/www/certbot \
+                --email ${{ secrets.SSL_EMAIL }} \
+                --agree-tos \
+                --no-eff-email \
+                --non-interactive \
+                -d ${{ secrets.DOMAIN_NAME }} \
+                -d www.${{ secrets.DOMAIN_NAME }} || echo "⚠️ Certificate generation failed. Manual intervention may be required."
+            
+              # Reload nginx to use the new certificate
+              if [ -d "./nginx/certs/live/${{ secrets.DOMAIN_NAME }}" ]; then
+                echo "✅ Certificate obtained successfully. Reloading nginx..."
+                docker compose exec nginx nginx -s reload
+              fi
+            else
+              echo "✅ SSL certificate already exists"
+            fi
+            
+            # Start certbot for auto-renewal
+            echo "🔄 Starting certbot for auto-renewal..."
+            docker compose up -d certbot
+            
             echo "⚙️ Running database migrations..."
             # ✅ Ensures migrate binary is called correctly
             docker compose run --rm migrate || echo "Migration skipped or already applied"
+            
+            echo "✅ Deployment completed successfully!"
+            echo "🌐 Your application should be available at https://${{ secrets.BASE_URL }}"
