@@ -149,23 +149,4 @@ jobs:
             # Start App and Nginx
             docker compose up -d app nginx certbot
 
-            # 7. REAL CERTIFICATE ACQUISITION
-            # If the current cert is the dummy one (or missing), we get the real one.
-            # We check if the issuer is NOT Let's Encrypt to detect our dummy cert.
-            IS_DUMMY=$(openssl x509 -in ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem -issuer -noout | grep "Let's Encrypt" || true)
-
-            if [ -z "$IS_DUMMY" ]; then
-              echo "🔒 Detected Dummy Certificate. Requesting Real Let's Encrypt Certificate..."
-
-              # Force renewal using webroot
-              docker compose run --rm certbot certonly --webroot --webroot-path /var/www/certbot \
-                --email ${{ secrets.SSL_EMAIL }} --agree-tos --no-eff-email --force-renewal \
-                -d ${{ secrets.DOMAIN_NAME }} -d www.${{ secrets.DOMAIN_NAME }}
-
-              echo "✅ Real certificate obtained. Reloading Nginx..."
-              docker compose exec nginx nginx -s reload
-            else
-              echo "✅ Valid Let's Encrypt certificate already exists."
-            fi
-
             echo "🎉 Deployment Success!"
