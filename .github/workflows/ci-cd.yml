@@ -31,11 +31,30 @@ jobs:
         with:
           go-version: stable
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Download Go Modules
+        run: go mod download
+
+      - name: Vendor dependencies
+        run: go mod vendor
+
+      - name: Run Go Tests
+        run: go test ./...
+
+      - name: Run Go Lint
+        uses: golangci/golangci-lint-action@v8
         with:
-          driver: docker
-          install: true
+          version: v2.6.0
+
+      # ----- BUILD & PUSH -----
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.TOKEN_GITHUB }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -43,21 +62,19 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ env.IMAGE_NAME }}:latest
-          # Use GHA cache to speed up builds significantly
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ----- DEPLOY PHASE -----
+      # ----- DEPLOY -----
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
         with:
           timeout: 1000s
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # We pass these secrets as env vars into the script for safety
-          envs: IMAGE_NAME
+          host: ${{ secrets.SERVER_HOST }}     # e.g., '123.45.67.89'
+          username: ${{ secrets.SERVER_USER }} # e.g., 'ubuntu'
+          key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
           script: |
             set -e # Stop script immediately on error
             
@@ -70,7 +87,7 @@ jobs:
             cd $PROJECT_DIR
             git fetch origin main
             git reset --hard origin/main
-            
+
             # 2. Setup Environment Variables
             echo "Creating .env file..."
             cat <<EOF > .env
@@ -86,7 +103,7 @@ jobs:
             REDIS_URL=${{ secrets.REDIS_URL }}
             DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}
             EOF
-            
+
             # 3. GeoIP Check
             mkdir -p ./pkg/geoip
             if [ ! -f "./pkg/geoip/GeoLite2-City.mmdb" ]; then
@@ -95,17 +112,17 @@ jobs:
               tar -xzf geoip.tar.gz -C ./pkg/geoip
               rm geoip.tar.gz
             fi
-            
+
             # 4. Pull Latest Images
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose pull app
             docker compose pull nginx
-            
+
             # 5. SSL BOOTSTRAP (The Critical Fix)
             # We must ensure a certificate exists BEFORE starting Nginx, otherwise Nginx crashes.
             mkdir -p ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}
             mkdir -p ./nginx/certbot-webroot
-            
+
             if [ ! -f "./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem" ]; then
               echo "⚠️  No SSL certificate found. Generating DUMMY certificate to allow Nginx start..."
               openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
@@ -113,39 +130,39 @@ jobs:
                 -out ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem \
                 -subj "/CN=localhost"
             fi
-            
+
             # 6. Restart Services
             echo "🚀 Restarting services..."
             docker compose down --remove-orphans
             docker compose up -d db redis
-            
+
             # Wait for DB (simple sleep is often more reliable than complex loops in SSH)
             sleep 10 
-            
+
             # Run Migrations
             echo "⚙️ Running Migrations..."
             docker compose run --rm migrate
-            
+
             # Start App and Nginx
             docker compose up -d app nginx certbot
-            
+
             # 7. REAL CERTIFICATE ACQUISITION
             # If the current cert is the dummy one (or missing), we get the real one.
             # We check if the issuer is NOT Let's Encrypt to detect our dummy cert.
             IS_DUMMY=$(openssl x509 -in ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem -issuer -noout | grep "Let's Encrypt" || true)
-            
+
             if [ -z "$IS_DUMMY" ]; then
               echo "🔒 Detected Dummy Certificate. Requesting Real Let's Encrypt Certificate..."
-            
+
               # Force renewal using webroot
               docker compose run --rm certbot certonly --webroot --webroot-path /var/www/certbot \
                 --email ${{ secrets.SSL_EMAIL }} --agree-tos --no-eff-email --force-renewal \
                 -d ${{ secrets.DOMAIN_NAME }} -d www.${{ secrets.DOMAIN_NAME }}
-            
+
               echo "✅ Real certificate obtained. Reloading Nginx..."
               docker compose exec nginx nginx -s reload
             else
               echo "✅ Valid Let's Encrypt certificate already exists."
             fi
-            
+
             echo "🎉 Deployment Success!"
