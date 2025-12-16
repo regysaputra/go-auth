@@ -1,5 +1,4 @@
 # --- Build Stage ---
-# We use a specific Go version in a lightweight Alpine container as our build environment.
 FROM golang:1.25-alpine AS builder
 
 # Install build dependencies. CGO is needed for pgx.
@@ -7,29 +6,49 @@ RUN apk add --no-cache git build-base
 
 WORKDIR /app
 
-# Copy and download dependencies first to leverage Docker's layer caching.
+# 1. OPTIMIZATION: Copy dependencies first
 COPY go.mod go.sum ./
+
+# 2. OPTIMIZATION: Download modules.
+# This layer will be cached unless go.mod/go.sum changes.
+RUN go mod download
 
 # Copy the rest of the source code.
 COPY . .
 
 # Build the application.
-# We build a statically linked binary to keep the final image small and self-contained.
-# The 'templates' are already embedded, so we don't need to copy them.
+# -ldflags '-w -s': strips debug information to reduce binary size
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags '-w -s' -o /app/server ./cmd/server
 
 # --- Final Stage ---
-# We use a minimal Alpine image for a tiny, secure final container.
 FROM alpine:latest
 
-# Add SSL certificates
-RUN apk add --no-cache ca-certificates curl
+# 3. LOCALIZATION & UTILS: Add SSL, Timezone data, and curl (for healthcheck)
+RUN apk add --no-cache ca-certificates curl tzdata
+
+# Set Timezone to Jakarta (WIB)
+ENV TZ=Asia/Jakarta
+
+# 4. SECURITY: Create a non-root user
+# -D: Don't assign a password
+# -g: Add to group 'appuser'
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
 
 # Copy the built application binary from the builder stage.
 COPY --from=builder /app/server /app/server
 
-# Expose the port our application listens on.
+# If your templates are NOT embedded in the Go binary, uncomment the line below:
+# COPY --from=builder /app/templates /app/templates
+
+# Change ownership of the app directory to the non-root user
+RUN chown -R appuser:appgroup /app
+
+# 5. SECURITY: Switch to non-root user
+USER appuser
+
+# Expose the port
 EXPOSE 8080
 
-# Set the command to run when the container starts.
 CMD ["/app/server"]

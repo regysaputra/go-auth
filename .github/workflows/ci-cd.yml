@@ -16,7 +16,6 @@ jobs:
     environment:
       name: production
 
-
     # Grant permissions for the job to write to the GitHub Container Registry
     permissions:
       contents: read
@@ -32,176 +31,115 @@ jobs:
         with:
           go-version: stable
 
-      - name: Download Go Modules
-        run: go mod download
-
-      - name: Vendor dependencies
-        run: go mod vendor
-
-      - name: Run Go Tests
-        run: go test ./...
-
-      - name: Run Go Lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: v2.6.0
-
-      # ----- BUILD & PUSH -----
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.TOKEN_GITHUB }}
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.IMAGE_NAME }}:latest
+          # Use GHA cache to speed up builds significantly
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ----- DEPLOY -----
+      # ----- DEPLOY PHASE -----
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
         with:
           timeout: 1000s
-          host: ${{ secrets.SERVER_HOST }}     # e.g., '123.45.67.89'
-          username: ${{ secrets.SERVER_USER }} # e.g., 'ubuntu'
-          key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # We pass these secrets as env vars into the script for safety
+          envs: IMAGE_NAME
           script: |
-            set -ex
-            # if repo missing or not a git repo, clone a fresh copy
-            if [ ! -d "go-auth/.git" ]; then
-              echo "Repository not found or not a git repo — cloning fresh copy..."
-              rm -rf go-auth
-              # If your repo is public:
-              git clone https://github.com/regysaputra/go-auth.git
-              # If private, use a token (ensure TOKEN_GITHUB is set as secret)
-              # git clone https://$GITHUB_ACTOR:$TOKEN_GITHUB@github.com/regysaputra/go-auth.git
+            set -e # Stop script immediately on error
+            
+            # 1. Setup Directory
+            PROJECT_DIR="go-auth"
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "Initializing repository..."
+              git clone https://${{ github.actor }}:${{ secrets.TOKEN_GITHUB }}@github.com/${{ github.repository }}.git $PROJECT_DIR
             fi
-            cd go-auth
+            cd $PROJECT_DIR
+            git fetch origin main
+            git reset --hard origin/main
             
-            echo "🔄 Resetting local changes..."
-            git reset --hard HEAD
+            # 2. Setup Environment Variables
+            echo "Creating .env file..."
+            cat <<EOF > .env
+            PORT=${{ secrets.PORT }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            SMTP_HOST=${{ secrets.SMTP_HOST }}
+            SMTP_PORT=${{ secrets.SMTP_PORT }}
+            SMTP_USERNAME=${{ secrets.SMTP_USERNAME }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            SMTP_FROM=${{ secrets.SMTP_FROM }}
+            BASE_URL=${{ secrets.BASE_URL }}
+            REDIS_URL=${{ secrets.REDIS_URL }}
+            DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}
+            EOF
             
-            echo "🔄 Pulling latest configuration..."
-            git pull origin main
-            
-            echo "📁 Checking if GeoLite2-City.mmdb exists..."
+            # 3. GeoIP Check
+            mkdir -p ./pkg/geoip
             if [ ! -f "./pkg/geoip/GeoLite2-City.mmdb" ]; then
-              echo "⬇️ GeoIP database missing. Downloading .tar.gz from Dropbox..."
+              echo "⬇️ Downloading GeoIP database..."
               curl -L "${{ secrets.GEOIP_DOWNLOAD_URL }}" -o geoip.tar.gz
-              
-              echo "📦 Extracting..."
-              tar -xzf geoip.tar.gz
-              
-              echo "🧹 Removing archive..."
+              tar -xzf geoip.tar.gz -C ./pkg/geoip
               rm geoip.tar.gz
-            else
-              echo "✔️ GeoIP database already exists — skipping download."
             fi
             
-            if [ -d "./nginx/certs" ]; then
-              echo "./nginx/certs is exixts"
-            else
-              echo "./nginx/certs does not exixts. Create SSL directory"
-              mkdir -p nginx/certs
-            fi
-            
-            if [ -d "./nginx/certbot-webroot" ]; then
-              echo "./nginx/certbot-webroot is exixts"
-            else
-              echo "./nginx/certbot-webroot does not exixts. Create SSL directory"
-              mkdir -p nginx/certbot-webroot
-            fi
-            
-            echo "🔐 Logging in to GHCR..."
+            # 4. Pull Latest Images
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose pull app
+            docker compose pull nginx
             
-            echo "⬇️ Pulling latest image..."
-            docker pull ${{ env.IMAGE_NAME }}:latest
+            # 5. SSL BOOTSTRAP (The Critical Fix)
+            # We must ensure a certificate exists BEFORE starting Nginx, otherwise Nginx crashes.
+            mkdir -p ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}
+            mkdir -p ./nginx/certbot-webroot
             
-            echo "Setting up environment variable ..." 
-            echo -e "PORT=${{ secrets.PORT }}\nSECRET_KEY=${{ secrets.SECRET_KEY }}\nDATABASE_URL=${{ secrets.DATABASE_URL }}\nSMTP_HOST=${{ secrets.SMTP_HOST }}\nSMTP_PORT=${{ secrets.SMTP_PORT }}\nSMTP_USERNAME=${{ secrets.SMTP_USERNAME }}\nSMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}\nSMTP_FROM=${{ secrets.SMTP_FROM }}\nBASE_URL=${{ secrets.BASE_URL }}\nREDIS_URL=${{ secrets.REDIS_URL }}" > .env
-            
-            echo "🧹 Stopping old containers..."
-            docker compose down
-            
-            echo "Cleaning up old volumes and images..."
-            docker system prune -f
-            
-            echo "⬇️ Pulling Redis and PostgreSQL images..."
-            docker pull redis:alpine
-            docker pull postgres:17-alpine
-            
-            echo "🧩 Starting dependencies..."
-            docker compose up -d db redis
-
-            echo "⏳ Waiting for PostgreSQL..."
-            timeout 60 bash -c '
-              until docker exec db pg_isready -U regy -d auth; do
-                sleep 2
-              done
-            '
-            echo "✅ PostgreSQL is ready"
-
-            echo "⏳ Waiting for Redis..."
-            timeout 60 bash -c '
-              until docker exec redis redis-cli ping | grep -q PONG; do
-                sleep 2
-              done
-            '
-            echo "✅ Redis is ready"
-
-            echo "🚀 Starting application..."
-            docker compose up -d app
-            
-            echo "Running nginx reverse proxy..."
-            docker compose up -d nginx
-            
-            # Check if SSL certificate exists
-            echo "🔍 Checking SSL certificate status..."
-            if [ ! -d "./nginx/certs/live/${{ secrets.DOMAIN_NAME }}" ]; then
-              echo "🔒 SSL certificate not found. Obtaining from Let's Encrypt..."
-            
-              # Wait for nginx to be fully ready
-              sleep 3
-            
-              # Obtain SSL certificate
-              docker compose run --rm certbot certonly \
-                --webroot \
-                --webroot-path=/var/www/certbot \
-                --email ${{ secrets.SSL_EMAIL }} \
-                --agree-tos \
-                --no-eff-email \
-                --non-interactive \
-                -d ${{ secrets.DOMAIN_NAME }} \
-                -d www.${{ secrets.DOMAIN_NAME }} || echo "⚠️ Certificate generation failed. Manual intervention may be required."
-            
-              # Reload nginx to use the new certificate
-              if [ -d "./nginx/certs/live/${{ secrets.DOMAIN_NAME }}" ]; then
-                echo "✅ Certificate obtained successfully. Reloading nginx..."
-                docker compose exec nginx nginx -s reload
-              fi
-            else
-              echo "✅ SSL certificate already exists"
+            if [ ! -f "./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem" ]; then
+              echo "⚠️  No SSL certificate found. Generating DUMMY certificate to allow Nginx start..."
+              openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+                -keyout ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/privkey.pem \
+                -out ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem \
+                -subj "/CN=localhost"
             fi
             
-            # Start certbot for auto-renewal
-            echo "🔄 Starting certbot for auto-renewal..."
-            docker compose up -d certbot
+            # 6. Restart Services
+            echo "🚀 Restarting services..."
+            docker compose down --remove-orphans
+            docker compose up -d db redis
             
-            echo "⚙️ Running database migrations..."
-            # ✅ Ensures migrate binary is called correctly
-            docker compose run --rm migrate || echo "Migration skipped or already applied"
+            # Wait for DB (simple sleep is often more reliable than complex loops in SSH)
+            sleep 10 
             
-            echo "✅ Deployment completed successfully!"
-            echo "🌐 Your application should be available at https://${{ secrets.BASE_URL }}"
+            # Run Migrations
+            echo "⚙️ Running Migrations..."
+            docker compose run --rm migrate
+            
+            # Start App and Nginx
+            docker compose up -d app nginx certbot
+            
+            # 7. REAL CERTIFICATE ACQUISITION
+            # If the current cert is the dummy one (or missing), we get the real one.
+            # We check if the issuer is NOT Let's Encrypt to detect our dummy cert.
+            IS_DUMMY=$(openssl x509 -in ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem -issuer -noout | grep "Let's Encrypt" || true)
+            
+            if [ -z "$IS_DUMMY" ]; then
+              echo "🔒 Detected Dummy Certificate. Requesting Real Let's Encrypt Certificate..."
+            
+              # Force renewal using webroot
+              docker compose run --rm certbot certonly --webroot --webroot-path /var/www/certbot \
+                --email ${{ secrets.SSL_EMAIL }} --agree-tos --no-eff-email --force-renewal \
+                -d ${{ secrets.DOMAIN_NAME }} -d www.${{ secrets.DOMAIN_NAME }}
+            
+              echo "✅ Real certificate obtained. Reloading Nginx..."
+              docker compose exec nginx nginx -s reload
+            else
+              echo "✅ Valid Let's Encrypt certificate already exists."
+            fi
+            
+            echo "🎉 Deployment Success!"

@@ -1,4 +1,4 @@
-.PHONY: help dev-up dev-down dev-logs dev-build dev-restart dev-shell prod-up prod-down prod-logs prod-restart prod-shell db-migrate db-shell redis-shell clean setup-dev setup-prod ssl-dev ssl-prod test lint
+.PHONY: help dev-up dev-down dev-logs dev-build dev-restart dev-shell prod-up prod-down prod-logs prod-restart prod-shell db-migrate db-shell redis-shell clean setup-dev setup-prod ssl-dev ssl-prod test lint psql ssh
 
 # Default target
 .DEFAULT_GOAL := help
@@ -386,3 +386,10 @@ update: ## Pull latest code and restart services
 		make dev-down && make dev-up; \
 	fi
 	@echo "$(GREEN)✅ Application updated!$(NC)"
+
+psql:
+	@echo "Connect to postgresql..."
+	@docker exec -it db psql -U regy -d auth
+
+ssh:
+	@ssh -i oci-private.key ubuntu@161.118.206.173
