@@ -51,11 +51,10 @@ jobs:
 
       - name: Download GeoIP Database
         run: |
-          mkdir -p ./pkg/geoip
           if [ ! -f "./pkg/geoip/GeoLite2-City.mmdb" ]; then
             echo "⬇️ Downloading GeoIP database..."
             curl -L "${{ secrets.GEOIP_DOWNLOAD_URL }}" -o geoip.tar.gz
-            tar -xzf geoip.tar.gz -C ./pkg/geoip
+            tar -xzf geoip.tar.gz
             rm geoip.tar.gz
           fi
 
