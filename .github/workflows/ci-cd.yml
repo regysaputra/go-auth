@@ -77,14 +77,17 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }} # Your server's private SSH key
           script: |
             set -e # Stop script immediately on error
-            
+
             # 1. Setup Directory
-            PROJECT_DIR="go-auth"
-            if [ ! -d "$PROJECT_DIR" ]; then
-              echo "Initializing repository..."
-              git clone https://${{ github.actor }}:${{ secrets.TOKEN_GITHUB }}@github.com/${{ github.repository }}.git $PROJECT_DIR
+            if [ ! -d "go-auth/.git" ]; then
+              echo "Repository not found or not a git repo — cloning fresh copy..."
+              rm -rf go-auth
+              # If your repo is public:
+              git clone https://github.com/regysaputra/go-auth.git
+              # If private, use a token (ensure TOKEN_GITHUB is set as secret)
+              # git clone https://$GITHUB_ACTOR:$TOKEN_GITHUB@github.com/regysaputra/go-auth.git
             fi
-            cd $PROJECT_DIR
+            cd go-auth
             git fetch origin main
             git reset --hard origin/main
 
