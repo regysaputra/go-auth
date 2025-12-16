@@ -40,7 +40,9 @@ WORKDIR /app
 COPY --from=builder /app/server /app/server
 
 # If your templates are NOT embedded in the Go binary, uncomment the line below:
-# COPY --from=builder /app/templates /app/templates
+COPY --from=builder /app/templates /app/templates
+
+COPY --from=builder /app/pkg/geoip /app/pkg/geoip
 
 # Change ownership of the app directory to the non-root user
 RUN chown -R appuser:appgroup /app
