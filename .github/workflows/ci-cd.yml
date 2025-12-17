@@ -49,15 +49,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Download GeoIP Database
-        run: |
-          if [ ! -f "./pkg/geoip/GeoLite2-City.mmdb" ]; then
-            echo "⬇️ Downloading GeoIP database..."
-            curl -L "${{ secrets.GEOIP_DOWNLOAD_URL }}" -o geoip.tar.gz
-            tar -xzf geoip.tar.gz
-            rm geoip.tar.gz
-          fi
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -117,25 +108,17 @@ jobs:
             EOF
 
             # 3. GeoIP Check
-            
+            if [ ! -f "./pkg/geoip/GeoLite2-City.mmdb" ]; then
+              echo "⬇️ Downloading GeoIP database..."
+              curl -L "${{ secrets.GEOIP_DOWNLOAD_URL }}" -o geoip.tar.gz
+              tar -xzf geoip.tar.gz
+              rm geoip.tar.gz
+            fi
 
             # 4. Pull Latest Images
             echo ${{ secrets.TOKEN_GITHUB }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose pull app
             docker compose pull nginx
-
-            # 5. SSL BOOTSTRAP (The Critical Fix)
-            # We must ensure a certificate exists BEFORE starting Nginx, otherwise Nginx crashes.
-            mkdir -p ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}
-            mkdir -p ./nginx/certbot-webroot
-
-            if [ ! -f "./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem" ]; then
-              echo "⚠️  No SSL certificate found. Generating DUMMY certificate to allow Nginx start..."
-              openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-                -keyout ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/privkey.pem \
-                -out ./nginx/certs/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem \
-                -subj "/CN=localhost"
-            fi
 
             # 6. Restart Services
             echo "🚀 Restarting services..."
